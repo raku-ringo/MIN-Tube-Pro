@@ -59,7 +59,7 @@
     .details h3 { margin: 0; font-size: 16px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .details p { margin: 4px 0 0; font-size: 14px; color: var(--text-muted); }
 
-    #loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    #loading { text-align: center; padding: 40px; color: var(--text-muted); font-weight: bold; }
   </style>
 </head>
 <body>
@@ -76,11 +76,11 @@
 
   <div class="chips-bar">
     <div class="chip active" data-q="trending">すべて</div>
-    <div class="chip" data-q="2024 ヒット曲">音楽</div>
-    <div class="chip" data-q="新作ゲーム 実況">ゲーム</div>
-    <div class="chip" data-q="最新ニュース">ニュース</div>
-    <div class="chip" data-q="人気バラエティ">エンタメ</div>
-    <div class="chip" data-q="最新ガジェット">テック</div>
+    <div class="chip" data-q="Official Music Video">音楽</div>
+    <div class="chip" data-q="ゲーム実況 配信">ゲーム</div>
+    <div class="chip" data-q="最新ニュース ライブ">ニュース</div>
+    <div class="chip" data-q="バラエティ 公式">エンタメ</div>
+    <div class="chip" data-q="ガジェット レビュー">テック</div>
   </div>
 
   <div class="container">
@@ -110,6 +110,7 @@
         videoGrid.innerHTML = '';
       }
 
+      // 'trending' の場合は専用APIを叩く
       const isDefault = !query || query === 'trending';
       const endpoint = isDefault 
         ? `/api/trending?page=${page}`
@@ -143,8 +144,8 @@
           videoGrid.appendChild(card);
         });
 
-        // データが極端に少ない場合は次ページを自動試行
-        if (items.length < 4 && page < 3) {
+        // 厳しいフィルタリングによってデータが少なくなった場合、自動で次ページを取得
+        if (items.length < 6 && page < 5) {
           isFetching = false;
           loadContent(query, page + 1);
         }
@@ -164,6 +165,10 @@
       if (!q) return;
       currentQuery = q;
       currentPage = 0;
+      
+      // チップスのアクティブ状態を外す
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      
       history.pushState(null, '', `/search?q=${encodeURIComponent(q)}`);
       loadContent(q, 0);
     };
@@ -183,6 +188,10 @@
         e.target.classList.add('active');
         currentQuery = e.target.dataset.q;
         currentPage = 0;
+        
+        // 検索バーの中身を空にする（チップス検索であることを明確にするため）
+        searchInput.value = '';
+        
         loadContent(currentQuery, 0);
       }
     };
