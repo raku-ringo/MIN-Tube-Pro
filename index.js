@@ -76,7 +76,6 @@ app.get("/", (req, res) => {
 app.get("/api/trending", async (req, res) => {
   const page = parseInt(req.query.page) || 0;
   try {
-    // 1. タイトルに「人気」と入っていなくても、圧倒的な再生数を誇るベースジャンル
     const baseTopics = [
       "Official Music Video", "ライブ 配信 ニュース", 
       "ゲーム 実況", "THE FIRST TAKE", "Vlog", 
@@ -84,11 +83,9 @@ app.get("/api/trending", async (req, res) => {
       "料理 レシピ", "エンタメ", "アニメ 最新話"
     ];
 
-    // ページごとにジャンルをズラして取得（常に新鮮なプールを作成）
     const seed1 = baseTopics[(page * 2) % baseTopics.length];
     const seed2 = baseTopics[(page * 2 + 1) % baseTopics.length];
 
-    // 2. 複数のジャンルから幅広く動画を取得
     const [res1, res2] = await Promise.all([
       yts.GetListByKeyword(seed1, false, 30),
       yts.GetListByKeyword(seed2, false, 30)
@@ -98,31 +95,14 @@ app.get("/api/trending", async (req, res) => {
     const uniqueItemsMap = new Map();
 
     for (const item of combined) {
-      // 基本フィルタリング（動画のみ、Shorts除外）
       if (item.type !== 'video') continue;
-      if (item.title.toLowerCase().includes('#shorts') || item.title.toLowerCase().includes('shorts')) continue;
-      if (!item.viewCountText) continue;
 
-      // 3. 再生回数パーサー (文字列から純粋な数値を抽出)
-      // 例: "123万 回視聴" -> 1230000, "1.5M views" -> 1500000, "1,234 views" -> 1234
-      const text = item.viewCountText.replace(/,/g, '');
-      let views = 0;
-      const match = text.match(/[\d.]+/);
+      const titleLower = item.title.toLowerCase();
+      // 絶対にショート動画を読み込まない厳密なフィルター
+      if (titleLower.includes('shorts') || titleLower.includes('#shorts') || titleLower.includes('ショート')) continue;
       
-      if (match) {
-        let num = parseFloat(match[0]);
-        if (text.includes('億') || text.includes('B')) num *= 100000000;
-        else if (text.includes('万')) num *= 10000;
-        else if (text.includes('M')) num *= 1000000;
-        else if (text.includes('K')) num *= 1000;
-        views = num;
-      }
-
-      // 4. ガチの人気動画フィルター (最低5万回以上再生されているものだけを許可)
-      if (views < 50000) continue;
-
-      // ソート用に数値をプロパティとして保持
-      item.numericViews = views;
+      const thumbUrl = item.thumbnail?.thumbnails?.[0]?.url || "";
+      if (thumbUrl.includes('shorts')) continue;
 
       // 重複排除
       if (!uniqueItemsMap.has(item.id)) {
@@ -130,11 +110,8 @@ app.get("/api/trending", async (req, res) => {
       }
     }
 
-    // 5. 再生回数（人気度）が圧倒的に高い順に並び替え
+    // 上位の結果を普通に読み込む
     let finalItems = Array.from(uniqueItemsMap.values());
-    finalItems.sort((a, b) => b.numericViews - a.numericViews);
-
-    // 上位20件を厳選
     finalItems = finalItems.slice(0, 20);
 
     // いつも同じ並びにならないよう、上位陣の中で少しだけシャッフル
