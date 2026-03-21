@@ -185,6 +185,27 @@
       }
     }
 
+    // Normalize and filter a list of items: remove UC-starting ids and normalize id to string
+    function normalizeAndFilterList(list) {
+      const out = [];
+      for (const it of list) {
+        if (!it) continue;
+        let id = null;
+        if (typeof it.id === 'string') id = it.id;
+        else if (it.id && typeof it.id === 'object') {
+          id = it.id.videoId || it.id.channelId || it.id.playlistId || it.id;
+        } else if (it.videoId) {
+          id = it.videoId;
+        }
+        if (!id) continue;
+        id = String(id);
+        if (id.startsWith('UC')) continue; // exclude channel-like ids
+        it.id = id;
+        out.push(it);
+      }
+      return out;
+    }
+
     async function loadContent(query = 'trending', page = 0) {
       if (isFetching) return;
       isFetching = true;
@@ -206,18 +227,7 @@
       try {
         // Primary fetch
         let items = await fetchEndpoint(endpoint);
-
-        // Filter out items whose id starts with "UC" (channel IDs) and normalize id if needed
-        items = items.filter(it => {
-          if (!it) return false;
-          const id = (typeof it.id === 'string') ? it.id : (it.id && (it.id.videoId || it.id.channelId || it.id.playlistId || it.id));
-          if (!id) return false;
-          // Exclude channel-like IDs starting with UC
-          if (String(id).startsWith('UC')) return false;
-          // attach normalized id back for consistent usage
-          it.id = String(id);
-          return true;
-        });
+        items = normalizeAndFilterList(items);
 
         // If first page and too few items, supplement with other categories and shuffle
         if (page === 0) {
@@ -247,14 +257,7 @@
             const combined = items.concat(...supplementResults.flat());
 
             // Filter out UC ids from combined and normalize
-            const filteredCombined = combined.filter(it => {
-              if (!it) return false;
-              const id = (typeof it.id === 'string') ? it.id : (it.id && (it.id.videoId || it.id.channelId || it.id.playlistId || it.id));
-              if (!id) return false;
-              if (String(id).startsWith('UC')) return false;
-              it.id = String(id);
-              return true;
-            });
+            const filteredCombined = normalizeAndFilterList(combined);
 
             // Deduplicate by id while preserving order
             const seen = new Set();
@@ -276,7 +279,7 @@
         }
 
         // Separate shorts (title contains '#') and normal items
-        const shorts = [];
+        let shorts = [];
         const normals = [];
 
         items.forEach(item => {
@@ -288,6 +291,50 @@
             normals.push(item);
           }
         });
+
+        // If shorts are 4 or fewer on first page, try to supplement shorts up to 6 by fetching from other categories.
+        if (page === 0 && shorts.length <= 4) {
+          // Build list of categories to search for additional shorts.
+          // Ensure that when currentQuery is 'trending' (すべて), we still search all categories.
+          const allChips = Array.from(document.querySelectorAll('.chip'))
+            .map(c => c.dataset.q)
+            .filter(q => q);
+
+          // Start with current query first to prefer same category, then others
+          const searchCats = [];
+          if (currentQuery && !searchCats.includes(currentQuery)) searchCats.push(currentQuery);
+          for (const c of allChips) {
+            if (!searchCats.includes(c)) searchCats.push(c);
+          }
+
+          // We'll fetch sequentially until we have at least 6 shorts or exhaust categories.
+          const needed = 6;
+          const addedShortIds = new Set(shorts.map(s => s.id));
+          for (let i = 0; i < searchCats.length && shorts.length < needed; i++) {
+            const cat = searchCats[i];
+            // Skip if cat is same as the main query and we've already used primary items (but still safe to fetch)
+            const catEndpoint = (cat === 'trending')
+              ? `/api/trending?page=0`
+              : `/api/search?q=${encodeURIComponent(cat)}&page=0`;
+            try {
+              const resItems = await fetchEndpoint(catEndpoint);
+              const norm = normalizeAndFilterList(resItems);
+              for (const it of norm) {
+                if (!it || !it.id) continue;
+                if (addedShortIds.has(it.id)) continue;
+                if ((it.title || '').includes('#')) {
+                  shorts.push(it);
+                  addedShortIds.add(it.id);
+                  if (shorts.length >= needed) break;
+                }
+              }
+            } catch (e) {
+              console.error('Supplement shorts fetch error', e);
+            }
+          }
+
+          // If still less than needed, it's acceptable — we used available sources.
+        }
 
         // Render shorts only on first page (recommended area)
         if (page === 0 && shorts.length > 0) {
