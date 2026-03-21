@@ -4,7 +4,6 @@ const yts = require("youtube-search-api");
 const fetch = require("node-fetch");
 const cookieParser = require("cookie-parser");
 
-
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -17,56 +16,28 @@ const TEMP_API_LIST = "https://raw.githubusercontent.com/Minotaur-ZAOU/test/refs
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cookieParser());
 
-
-
-let currentPage = 0;
-let currentQuery = "";
 let apiListCache = [];
 
+// APIキャッシュの更新
 async function updateApiListCache() {
-  let tempApiList = [];
-  let mainApiList = [];
-  
-  // 1. GitHubのAPIリストを最初に取得
-  try {
-    const tempResponse = await fetch(TEMP_API_LIST);
-    if (tempResponse.ok) {
-      tempApiList = await tempResponse.json();
-      console.log("GitHubのAPIリストを取得しました:", tempApiList);
-    } else {
-      console.error("GitHub APIリスト取得エラー:", tempResponse.status);
-    }
-  } catch (err) {
-    console.error("GitHub APIリストの取得に失敗:", err);
-  }
-
-  // 2. GitHubのリストを`apiListCache`にセット
-  if (tempApiList.length > 0) {
-    apiListCache = tempApiList;
-  }
-
-  // 3. APIリストを取得
   try {
     const response = await fetch(API_HEALTH_CHECKER);
     if (response.ok) {
-      mainApiList = await response.json();
-      console.log("GlitchのAPIリストを取得しました:", mainApiList);
-      // 4. リストが最新なら更新
+      const mainApiList = await response.json();
       if (Array.isArray(mainApiList) && mainApiList.length > 0) {
         apiListCache = mainApiList;
-        console.log("APIリストを最新のGlitchのリストに更新しました");
+        console.log("API List updated.");
       }
-    } else {
-      console.error("APIヘルスチェッカーのエラー:", response.status);
     }
   } catch (err) {
-    console.error("Glitch APIリストの取得に失敗:", err);
+    console.error("API update failed, using fallback.");
   }
 }
 
 updateApiListCache();
+setInterval(updateApiListCache, 1000 * 60 * 10); // 10分ごとに更新
 
-function fetchWithTimeout(url, options = {}, timeout = 4000) {
+function fetchWithTimeout(url, options = {}, timeout = 5000) {
   return Promise.race([
     fetch(url, options),
     new Promise((_, reject) =>
@@ -75,39 +46,29 @@ function fetchWithTimeout(url, options = {}, timeout = 4000) {
   ]);
 }
 
+// ミドルウェア: 人間確認 (既存ロジックを継承)
 app.use(async (req, res, next) => {
-  await updateApiListCache();
-
-  if (!req.cookies || req.cookies.humanVerified !== "true") {
-    
-    const pages = [
-      'https://html-box.glitch.me/',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/3d.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/check.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/fx.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/nasa.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/nasa.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/study.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/math.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/modul.txt',
-      'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/check.txt'
-    ];
-    const randomPage = pages[Math.floor(Math.random() * pages.length)];
-
-    try {
-      const response = await fetch(randomPage);
-      const htmlContent = await response.text();
-
-
-      return res.render("robots", { content: htmlContent });
-    } catch (err) {
-      console.error("Error fetching external page:", err);
-      return res.render("robots", { content: "<p>コンテンツの読み込みに失敗しました。</p>" });
+  if (req.path.startsWith("/api") || req.path.startsWith("/video") || req.path === "/") {
+    if (!req.cookies || req.cookies.humanVerified !== "true") {
+      const pages = [
+        'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/3d.txt',
+        'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/math.txt',
+        'https://raw.githubusercontent.com/mino-hobby-pro/gisou-min2/refs/heads/main/study.txt'
+      ];
+      const randomPage = pages[Math.floor(Math.random() * pages.length)];
+      try {
+        const response = await fetch(randomPage);
+        const htmlContent = await response.text();
+        return res.render("robots", { content: htmlContent });
+      } catch (err) {
+        return res.render("robots", { content: "<p>Verification Required</p>" });
+      }
     }
   }
-
   next();
 });
+
+// --- API ENDPOINTS ---
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "home.html"));
@@ -116,1390 +77,335 @@ app.get("/", (req, res) => {
 app.get("/api/search", async (req, res, next) => {
   const query = req.query.q;
   const page = req.query.page || 0;
-  if (!query) {
-    return res.status(400).json({ error: "検索クエリが必要です" });
-  }
+  if (!query) return res.status(400).json({ error: "Query required" });
   try {
     const results = await yts.GetListByKeyword(query, false, 20, page);
-    currentPage = parseInt(page) + 1;
-    currentQuery = query;
     res.json(results);
+  } catch (err) { next(err); }
+});
+
+// 高度なレコメンドアルゴリズム用エンドポイント
+app.get("/api/recommendations", async (req, res) => {
+  const { title, channel } = req.query;
+  try {
+    // 1. タイトルから重要なキーワードを抽出（記号を削除し、長い単語を優先）
+    const keywords = title
+      .replace(/[【】「」()!！?？\[\]]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 1)
+      .slice(0, 3)
+      .join(' ');
+
+    // 2. キーワード + チャンネル名で検索して関連性を高める
+    const searchResults = await yts.GetListByKeyword(`${keywords} ${channel}`, false, 15);
+    
+    // 3. 結果をシャッフルして「新発見」感を出す
+    const shuffled = (searchResults.items || []).sort(() => 0.5 - Math.random());
+    
+    res.json({ items: shuffled });
   } catch (err) {
-    next(err);
+    res.json({ items: [] });
   }
 });
 
-app.get("/api/autocomplete", async (req, res, next) => {
-  const keyword = req.query.q;
-  if (!keyword) {
-    return res.status(400).json({ error: "検索クエリが必要です" });
-  }
-  try {
-    const url =
-      "http://www.google.com/complete/search?client=youtube&hl=ja&ds=yt&q=" +
-      encodeURIComponent(keyword);
-    const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-    const text = await response.text();
-    const jsonStr = text.substring(19, text.length - 1);
-    const suggestions = JSON.parse(jsonStr)[1];
-    res.json({ suggestions });
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.get("/api/playlist", async (req, res, next) => {
-  const channelName = req.query.channelName;
-  if (!channelName) {
-    return res.status(400).json({ error: "channelName パラメータが必要です" });
-  }
-  try {
-    const playlistResults = await yts.GetListByKeyword(channelName, false, 10, 0);
-    const playlistItems = playlistResults.items || [];
-    const playlist = playlistItems.map(item => ({
-      id: item.id,
-      title: item.title || "No title"
-    }));
-    res.json({ playlist });
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.get("/api/playlist-ejs", async (req, res, next) => {
-  const channelID = req.query.channelID;
-  const authorName = req.query.authorName;
-  if (!channelID || !authorName) {
-    return res.status(400).json({ error: "channelID および authorName パラメータが必要です" });
-  }
-  try {
-    const searchQuery = channelID + " " + authorName;
-    const playlistResults = await yts.GetListByKeyword(searchQuery, false, 10, 0);
-    const playlistItems = playlistResults.items || [];
-    const playlist = playlistItems.map(item => ({
-      id: item.id,
-      title: item.title || "No title"
-    }));
-    res.json({ playlist });
-  } catch (err) {
-    next(err);
-  }
-});
+// --- VIDEO PAGE ---
 
 app.get("/video/:id", async (req, res, next) => {
   const videoId = req.params.id;
-  if (!videoId) {
-    return res.status(400).send("動画IDが必要です");
-  }
   
   try {
-    if (!Array.isArray(apiListCache) || apiListCache.length === 0) {
-      return res.status(500).send("有効なAPIリストが取得できませんでした。");
-    }
-    const apiList = apiListCache;
-
     let videoData = null;
-    let commentsData = null;
+    let commentsData = { commentCount: 0, comments: [] };
     let successfulApi = null;
 
-    const overallTimeout = 20000;
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < overallTimeout) {
-      for (const apiBase of apiList) {
-        if (Date.now() - startTime >= overallTimeout) break;
-        try {
-          const videoResponse = await fetchWithTimeout(
-            `${apiBase}/api/video/${videoId}`,
-            {},
-            9000
-          );
-          if (videoResponse.ok) {
-            const tempData = await videoResponse.json();
-            if (tempData.stream_url) {
-              videoData = tempData;
-              successfulApi = apiBase;
-              break;
-            }
+    // APIリストから動画情報を取得
+    for (const apiBase of apiListCache) {
+      try {
+        const response = await fetchWithTimeout(`${apiBase}/api/video/${videoId}`, {}, 6000);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.stream_url) {
+            videoData = data;
+            successfulApi = apiBase;
+            break;
           }
-        } catch (err) {
-          console.warn(`${apiBase} での動画取得エラー: ${err.message}`);
-          continue;
         }
-      }
-      if (videoData && videoData.stream_url) break;
+      } catch (e) { continue; }
     }
 
-    if (!videoData || !videoData.stream_url) {
-      videoData = videoData || {};
-      videoData.stream_url = "youtube-nocookie";
+    if (!videoData) {
+      videoData = { videoTitle: "再生できない動画", stream_url: "youtube-nocookie" };
     }
 
+    // コメント取得
     if (successfulApi) {
       try {
-        const commentsResponse = await fetchWithTimeout(
-          `${successfulApi}/api/comments/${videoId}`,
-          {},
-          4000
-        );
-        if (commentsResponse.ok) {
-          commentsData = await commentsResponse.json();
-        }
-      } catch (err) {
-        console.warn(`${successfulApi} でのコメント取得エラー: ${err.message}`);
-      }
-    }
-    if (!commentsData) {
-      commentsData = { commentCount: 0, comments: [] };
+        const cRes = await fetchWithTimeout(`${successfulApi}/api/comments/${videoId}`, {}, 3000);
+        if (cRes.ok) commentsData = await cRes.json();
+      } catch (e) {}
     }
 
-    const streamEmbedHTML =
-      videoData.stream_url !== "youtube-nocookie"
-        ? `<video controls autoplay style="border-radius: 8px;">
-             <source src="${videoData.stream_url}" type="video/mp4">
-             お使いのブラウザは video タグに対応していません。
-           </video>`
-        : `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border-radius: 8px;"></iframe>`;
+    const streamEmbed = videoData.stream_url !== "youtube-nocookie"
+      ? `<video controls autoplay poster="https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg">
+           <source src="${videoData.stream_url}" type="video/mp4">
+         </video>`
+      : `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1" frameborder="0" allowfullscreen></iframe>`;
 
-    const youtubeEmbedHTML = `<iframe style="width: 932px; height:524px; border: none; border-radius: 8px;" src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-
-    let commentsHTML = "";
-    if (commentsData.comments && Array.isArray(commentsData.comments) && commentsData.comments.length > 0) {
-      commentsHTML = commentsData.comments
-        .map((comment) => {
-          const thumb =
-            comment.authorThumbnails && comment.authorThumbnails.length > 0
-              ? comment.authorThumbnails[0].url
-              : "";
-          return `
-            <div class="comment">
-              <div class="comment-header">
-                ${thumb ? `<img class="avatar" src="${thumb}" alt="${comment.author}">` : ""}
-                <span class="comment-author">${comment.author}</span>
-                <span class="comment-time">${comment.publishedText || ""}</span>
-              </div>
-              <div class="comment-body">${comment.contentHtml || comment.content}</div>
-              <div class="comment-stats">Likes: ${comment.likeCount || 0}</div>
-            </div>
-        `;
-        })
-        .join("");
-    } else {
-      commentsHTML = "<p>コメントがありません。</p>";
-    }
-
+    // HTMLテンプレート生成
     const html = `
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${videoData.videoTitle || "Youtube-Pro"}</title>
-
-<style>
-:root{
-  --bg-main:#0f0f0f;
-  --bg-elevated:#181818;
-  --bg-elevated-2:#202020;
-  --border-subtle:#303030;
-  --text-main:#f1f1f1;
-  --text-sub:#aaaaaa;
-  --accent:#3ea6ff;
-  --accent-danger:#cc0000;
-  --chip-bg:#272727;
-}
-
-*{
-  box-sizing:border-box;
-}
-
-body{
-  margin:0;
-  font-family:"Roboto","Noto Sans JP",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:var(--bg-main);
-  color:var(--text-main);
-}
-
-/* ヘッダー */
-.header{
-  position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  height:56px;
-  background:rgba(15,15,15,0.98);
-  display:flex;
-  align-items:center;
-  padding:0 16px;
-  border-bottom:1px solid #222;
-  z-index:999;
-}
-
-.header-left{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.burger{
-  width:24px;
-  height:24px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-}
-
-.burger:hover{
-  background:#272727;
-}
-
-.burger span{
-  display:block;
-  width:14px;
-  height:2px;
-  background:#fff;
-  position:relative;
-}
-
-.burger span::before,
-.burger span::after{
-  content:"";
-  position:absolute;
-  left:0;
-  width:14px;
-  height:2px;
-  background:#fff;
-}
-
-.burger span::before{
-  top:-4px;
-}
-.burger span::after{
-  top:4px;
-}
-
-.logo{
-  display:flex;
-  align-items:center;
-  gap:4px;
-  cursor:pointer;
-}
-
-.logo-icon{
-  width:24px;
-  height:24px;
-  background:#ff0000;
-  border-radius:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:14px;
-  font-weight:700;
-}
-
-.logo-text{
-  font-weight:700;
-  font-size:18px;
-}
-
-/* 検索 */
-.header-center{
-  flex:1;
-  display:flex;
-  justify-content:center;
-}
-
-.search{
-  display:flex;
-  width:100%;
-  max-width:600px;
-}
-
-.search-input-wrap{
-  flex:1;
-  display:flex;
-}
-
-.search input{
-  flex:1;
-  padding:9px 12px;
-  background:#121212;
-  border:1px solid #303030;
-  border-right:none;
-  color:white;
-  border-radius:40px 0 0 40px;
-  font-size:14px;
-}
-
-.search button{
-  background:#222;
-  border:1px solid #303030;
-  border-radius:0 40px 40px 0;
-  color:white;
-  padding:0 18px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:16px;
-}
-
-.search button:hover{
-  background:#303030;
-}
-
-.header-right{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.header-icon{
-  width:32px;
-  height:32px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-}
-
-.header-icon:hover{
-  background:#272727;
-}
-
-.header-avatar{
-  width:32px;
-  height:32px;
-  border-radius:50%;
-  background:#444;
-}
-
-/* レイアウト */
-.layout{
-  margin-top:56px;
-  display:flex;
-  justify-content:center;
-}
-
-.main{
-  width:100%;
-  max-width:1280px;
-  display:flex;
-  gap:24px;
-  padding:24px 16px 40px;
-}
-
-/* 左側: 動画 */
-.video-wrap{
-  flex:3;
-  min-width:0;
-}
-
-.video-player{
-  width:100%;
-  background:black;
-  border-radius:12px;
-  overflow:hidden;
-}
-
-.video-player iframe,
-.video-player video{
-  width:100%;
-  height:520px;
-  display:block;
-}
-
-/* タイトル */
-.title{
-  font-size:18px;
-  font-weight:500;
-  margin:14px 0 8px;
-}
-
-/* メタ情報 */
-.meta-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
-}
-
-/* チャンネル */
-.channel{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.channel-left{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.channel-left img{
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  object-fit:cover;
-  background:#333;
-}
-
-.channel-info-main{
-  font-size:14px;
-  font-weight:500;
-}
-
-.channel-info-sub{
-  font-size:12px;
-  color:var(--text-sub);
-}
-
-.channel-subscribe-wrap{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-.subscribe{
-  background:var(--accent-danger);
-  color:white;
-  border:none;
-  padding:9px 16px;
-  cursor:pointer;
-  border-radius:20px;
-  font-size:14px;
-  font-weight:500;
-}
-
-.subscribe:hover{
-  background:#e60000;
-}
-
-/* アクション */
-.actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-.action{
-  background:#272727;
-  padding:8px 14px;
-  border-radius:20px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:14px;
-}
-
-.action:hover{
-  background:#3a3a3a;
-}
-
-/* 説明 */
-.desc{
-  background:var(--bg-elevated);
-  padding:12px 14px;
-  border-radius:12px;
-  font-size:14px;
-  margin-top:12px;
-  line-height:1.6;
-}
-
-.desc-views-date{
-  font-weight:500;
-  margin-bottom:6px;
-}
-
-.desc-text{
-  white-space:pre-wrap;
-}
-
-/* チップ（カテゴリなど） */
-.chips-row{
-  margin:16px 0 8px;
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-.chip{
-  background:var(--chip-bg);
-  padding:6px 12px;
-  border-radius:16px;
-  font-size:12px;
-  cursor:pointer;
-}
-
-.chip.active{
-  background:#fff;
-  color:#000;
-}
-
-/* コメント */
-.comments{
-  margin-top:20px;
-}
-
-.comments h3{
-  font-size:16px;
-  margin-bottom:12px;
-}
-
-.comment{
-  display:flex;
-  gap:10px;
-  margin-bottom:16px;
-}
-
-.comment img{
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  object-fit:cover;
-  background:#333;
-}
-
-.comment-body{
-  font-size:14px;
-}
-
-.comment-author{
-  font-weight:500;
-  margin-bottom:2px;
-}
-
-.comment-text{
-  color:#e0e0e0;
-}
-
-/* 右側: おすすめ */
-.recommend-wrap{
-  flex:1.4;
-  min-width:260px;
-}
-
-.recommend-header{
-  font-size:14px;
-  color:var(--text-sub);
-  margin-bottom:8px;
-}
-
-.recommend{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.rec-item{
-  display:flex;
-  gap:8px;
-  cursor:pointer;
-}
-
-.rec-thumb-wrap{
-  position:relative;
-  flex-shrink:0;
-}
-
-.rec-item img{
-  width:168px;
-  height:94px;
-  border-radius:8px;
-  object-fit:cover;
-  background:#333;
-}
-
-.rec-duration{
-  position:absolute;
-  right:4px;
-  bottom:4px;
-  background:rgba(0,0,0,0.8);
-  color:#fff;
-  font-size:11px;
-  padding:2px 4px;
-  border-radius:3px;
-}
-
-.rec-texts{
-  flex:1;
-  min-width:0;
-}
-
-.rec-title{
-  font-size:14px;
-  font-weight:500;
-  margin-bottom:4px;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-
-.rec-channel{
-  font-size:12px;
-  color:var(--text-sub);
-}
-
-.rec-meta{
-  font-size:12px;
-  color:var(--text-sub);
-}
-
-/* レスポンシブ */
-@media(max-width:1100px){
-  .main{
-    flex-direction:column;
-  }
-  .recommend-wrap{
-    order:-1;
-  }
-}
-
-@media(max-width:768px){
-  .header-center{
-    display:none;
-  }
-  .main{
-    padding:16px 8px 32px;
-  }
-  .video-player iframe,
-  .video-player video{
-    height:220px;
-  }
-}
-
-@media(max-width:480px){
-  .rec-item img{
-    width:140px;
-    height:78px;
-  }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${videoData.videoTitle} - YouTube Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0f0f0f;
+            --bg-secondary: #272727;
+            --bg-hover: #3f3f3f;
+            --text-main: #f1f1f1;
+            --text-sub: #aaaaaa;
+            --yt-red: #ff0000;
+        }
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-main);
+            color: var(--text-main);
+            font-family: "Roboto", "Arial", sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed; top: 0; width: 100%; height: 56px;
+            background: var(--bg-main);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px; box-sizing: border-box; z-index: 1000;
+        }
+        .nav-left { display: flex; align-items: center; gap: 16px; font-size: 20px; }
+        .logo { display: flex; align-items: center; color: white; text-decoration: none; font-weight: bold; letter-spacing: -1px; }
+        .logo i { color: var(--yt-red); font-size: 24px; margin-right: 4px; }
+        
+        .nav-center { flex: 0 1 720px; display: flex; align-items: center; }
+        .search-bar {
+            display: flex; width: 100%;
+            background: #121212; border: 1px solid #303030; border-radius: 40px 0 0 40px;
+            padding: 0 16px; margin-left: 32px;
+        }
+        .search-bar input {
+            width: 100%; background: transparent; border: none; color: white;
+            height: 40px; font-size: 16px; outline: none;
+        }
+        .search-btn {
+            background: #222; border: 1px solid #303030; border-left: none;
+            border-radius: 0 40px 40px 0; width: 64px; height: 40px;
+            color: white; cursor: pointer;
+        }
+
+        /* Layout */
+        .container {
+            margin-top: 72px; display: flex; justify-content: center;
+            padding: 0 24px; gap: 24px; max-width: 1700px; margin-left: auto; margin-right: auto;
+        }
+        .main-content { flex: 1; max-width: 1280px; }
+        .sidebar { width: 400px; flex-shrink: 0; }
+
+        /* Player */
+        .player-container {
+            width: 100%; aspect-ratio: 16 / 9;
+            background: black; border-radius: 12px; overflow: hidden;
+        }
+        .player-container video, .player-container iframe { width: 100%; height: 100%; border: none; }
+
+        /* Video Info */
+        .video-title { font-size: 20px; font-weight: bold; margin: 12px 0 8px 0; line-height: 28px; }
+        .owner-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .owner-info { display: flex; align-items: center; gap: 12px; }
+        .owner-info img { width: 40px; height: 40px; border-radius: 50%; background: #333; }
+        .channel-name { font-weight: bold; font-size: 16px; }
+        .sub-count { font-size: 12px; color: var(--text-sub); }
+        .btn-sub {
+            background: white; color: black; border: none;
+            padding: 0 16px; height: 36px; border-radius: 18px;
+            font-weight: bold; cursor: pointer; margin-left: 12px;
+        }
+        .actions { display: flex; gap: 8px; }
+        .action-btn {
+            background: var(--bg-secondary); border: none; color: white;
+            padding: 0 16px; height: 36px; border-radius: 18px;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px;
+        }
+        .action-btn:hover { background: var(--bg-hover); }
+
+        /* Description */
+        .description-box {
+            background: var(--bg-secondary); border-radius: 12px;
+            padding: 12px; font-size: 14px; line-height: 20px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .description-box:hover { background: #333; }
+        .stats { font-weight: bold; margin-bottom: 4px; }
+
+        /* Comments */
+        .comments-section { margin-top: 24px; }
+        .comment-item { display: flex; gap: 16px; margin-bottom: 24px; }
+        .comment-avatar { width: 40px; height: 40px; border-radius: 50%; }
+        .comment-right { flex: 1; }
+        .comment-header { font-size: 13px; margin-bottom: 4px; }
+        .comment-author { font-weight: bold; margin-right: 8px; }
+        .comment-text { font-size: 14px; color: #f1f1f1; white-space: pre-wrap; }
+
+        /* Recommendations */
+        .rec-item { display: flex; gap: 8px; margin-bottom: 12px; cursor: pointer; text-decoration: none; color: inherit; }
+        .rec-thumb { position: relative; width: 168px; height: 94px; flex-shrink: 0; border-radius: 8px; overflow: hidden; background: #222; }
+        .rec-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .rec-info { flex: 1; }
+        .rec-title { font-size: 14px; font-weight: bold; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
+        .rec-meta { font-size: 12px; color: var(--text-sub); }
+
+        @media (max-width: 1100px) {
+            .container { flex-direction: column; padding: 0; }
+            .sidebar { width: 100%; padding: 12px; box-sizing: border-box; }
+            .main-content { padding: 12px; }
+            .player-container { border-radius: 0; }
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <div class="burger"><span></span></div>
-    <div class="logo" onclick="location.href='/'">
-      <div class="logo-icon">▶</div>
-      <div class="logo-text">Youtube-Pro</div>
+<nav class="navbar">
+    <div class="nav-left">
+        <i class="fas fa-bars"></i>
+        <a href="/" class="logo"><i class="fab fa-youtube"></i>YouTube<sup>Pro</sup></a>
     </div>
-  </div>
+    <div class="nav-center">
+        <form class="search-bar" action="/nothing/search">
+            <input type="text" name="q" placeholder="検索">
+            <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+        </form>
+    </div>
+    <div class="nav-right" style="font-size: 20px; display:flex; gap:20px;">
+        <i class="fas fa-video"></i>
+        <i class="fas fa-bell"></i>
+        <i class="fas fa-user-circle"></i>
+    </div>
+</nav>
 
-  <div class="header-center">
-    <form class="search" id="searchForm">
-      <div class="search-input-wrap">
-        <input id="q" placeholder="検索" value="">
-      </div>
-      <button type="submit">🔍</button>
-    </form>
-  </div>
-
-  <div class="header-right">
-    <div class="header-icon">⬤</div>
-    <div class="header-icon">⋯</div>
-    <div class="header-avatar"></div>
-  </div>
-</div>
-
-<div class="layout">
-  <div class="main">
-
-    <!-- 左: 動画 -->
-    <div class="video-wrap">
-
-      <div class="video-player" id="player"></div>
-
-      <div class="title">${videoData.videoTitle || ""}</div>
-
-      <div class="meta-row">
-        <div class="channel">
-          <div class="channel-left">
-            <img src="${videoData.channelImage || ""}" onerror="this.src='/fallback-avatar.png'">
-            <div>
-              <div class="channel-info-main">${videoData.channelName || ""}</div>
-              <div class="channel-info-sub">
-                登録者数 ${videoData.subscriberText || "非表示"}
-              </div>
+<div class="container">
+    <div class="main-content">
+        <div class="player-container">
+            ${streamEmbed}
+        </div>
+        
+        <h1 class="video-title">${videoData.videoTitle}</h1>
+        
+        <div class="owner-row">
+            <div class="owner-info">
+                <img src="${videoData.channelImage || 'https://via.placeholder.com/40'}" alt="avatar">
+                <div>
+                    <div class="channel-name">${videoData.channelName || 'Unknown Channel'}</div>
+                    <div class="sub-count">チャンネル登録者数 非表示</div>
+                </div>
+                <button class="btn-sub">チャンネル登録</button>
             </div>
-          </div>
+            <div class="actions">
+                <div class="action-btn"><i class="far fa-thumbs-up"></i> ${videoData.likeCount || 0}</div>
+                <div class="action-btn"><i class="fas fa-share"></i> 共有</div>
+                <div class="action-btn"><i class="fas fa-download"></i> オフライン</div>
+                <div class="action-btn">...</div>
+            </div>
         </div>
 
-        <div class="channel-subscribe-wrap">
-          <button class="subscribe">登録</button>
+        <div class="description-box" id="descBox">
+            <div class="stats">${videoData.videoViews || '0'} 回視聴  2024/03/21</div>
+            <div id="descText">${videoData.videoDes || '説明はありません。'}</div>
         </div>
 
-        <div class="actions">
-          <div class="action">
-            <span>👍</span>
-            <span>${videoData.likeCount || 0}</span>
-          </div>
-          <div class="action">
-            <span>🔁</span><span>共有</span>
-          </div>
-          <div class="action">
-            <span>💾</span><span>保存</span>
-          </div>
+        <div class="comments-section">
+            <h3>コメント ${commentsData.commentCount} 件</h3>
+            <div id="commentsList">
+                ${commentsData.comments.map(c => `
+                    <div class="comment-item">
+                        <img class="comment-avatar" src="${c.authorThumbnails?.[0]?.url || 'https://via.placeholder.com/40'}">
+                        <div class="comment-right">
+                            <div class="comment-header">
+                                <span class="comment-author">${c.author}</span>
+                                <span style="color:var(--text-sub)">${c.publishedText || ''}</span>
+                            </div>
+                            <div class="comment-text">${c.content}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
         </div>
-      </div>
-
-      <div class="chips-row" id="chipsRow">
-        <!-- 動的にタグを表示 -->
-      </div>
-
-      <div class="desc">
-        <div class="desc-views-date">
-          ${videoData.videoViews || 0} 回視聴
-          ${videoData.publishedText ? "・" + videoData.publishedText : ""}
-        </div>
-        <div class="desc-text">
-          ${videoData.videoDes || ""}
-        </div>
-      </div>
-
-      <div class="comments">
-        <h3>コメント ${commentsData.commentCount || 0}</h3>
-        ${commentsHTML}
-      </div>
-
     </div>
 
-    <!-- 右: おすすめ -->
-    <div class="recommend-wrap">
-      <div class="recommend-header">おすすめ</div>
-      <div class="recommend" id="rec"></div>
+    <div class="sidebar">
+        <div id="recommendations">
+            <p style="padding:20px; color:var(--text-sub);">おすすめを読み込み中...</p>
+        </div>
     </div>
-
-  </div>
 </div>
 
 <script>
-const stream = \`${streamEmbedHTML.replace(/`/g,"\\`")}\`;
-const yt = \`${youtubeEmbedHTML.replace(/`/g,"\\`")}\`;
+    // 完璧なレコメンドアルゴリズムの実行
+    async function loadRecommendations() {
+        const title = encodeURIComponent("${videoData.videoTitle}");
+        const channel = encodeURIComponent("${videoData.channelName}");
+        const res = await fetch(\`/api/recommendations?title=\${title}&channel=\${channel}\`);
+        const data = await res.json();
+        
+        const recContainer = document.getElementById('recommendations');
+        if (!data.items || data.items.length === 0) {
+            recContainer.innerHTML = "<p>おすすめが見つかりませんでした</p>";
+            return;
+        }
 
-const player = document.getElementById('player');
-const rec = document.getElementById('rec');
-const chipsRow = document.getElementById('chipsRow');
-const searchForm = document.getElementById('searchForm');
-const q = document.getElementById('q');
+        recContainer.innerHTML = data.items.map(item => \`
+            <a href="/video/\${item.id}" class="rec-item">
+                <div class="rec-thumb">
+                    <img src="https://i.ytimg.com/vi/\${item.id}/mqdefault.jpg">
+                </div>
+                <div class="rec-info">
+                    <div class="rec-title">\${item.title}</div>
+                    <div class="rec-meta">
+                        \${item.channelTitle || 'YouTube Pro'}<br>
+                        \${item.viewCount || ''}
+                    </div>
+                </div>
+            </a>
+        \`).join('');
+    }
 
-player.innerHTML = stream;
-
-/* 検索 */
-searchForm.onsubmit = e => {
-  e.preventDefault();
-  const keyword = q.value.trim();
-  if(!keyword) return;
-  location.href = "/nothing/search?q=" + encodeURIComponent(keyword);
-};
-
-/* タグチップ */
-(function renderTags(){
-  const tags = (videoData.tags && Array.isArray(videoData.tags))
-    ? videoData.tags.slice(0,8)
-    : [];
-  if(!tags.length) return;
-  tags.forEach((tag,i)=>{
-    const div = document.createElement('div');
-    div.className = 'chip' + (i===0 ? ' active' : '');
-    div.textContent = "#" + tag;
-    div.onclick = () => {
-      location.href = "/nothing/search?q=" + encodeURIComponent(tag);
-    };
-    chipsRow.appendChild(div);
-  });
-})();
-
-/* プレイヤー切替（ダブルクリックでYouTube埋め込みに） */
-player.ondblclick = () => {
-  player.innerHTML = yt;
-};
-
-/* 完璧寄りのおすすめアルゴリズム（フロント側スコアリング） */
-(async function loadRecommendations(){
-  try{
-    // 現在の動画情報
-    const current = {
-      id: "${videoData.videoId}",
-      channelId: "${videoData.channelId || ""}",
-      channelName: "${videoData.channelName || ""}",
-      title: ${JSON.stringify(videoData.videoTitle || "")},
-      tags: ${JSON.stringify(videoData.tags || [])},
-      views: Number(${JSON.stringify(videoData.videoViews || 0)}) || 0
+    // 説明文の折りたたみ
+    const descBox = document.getElementById('descBox');
+    descBox.onclick = () => {
+        descBox.style.cursor = 'default';
+        document.getElementById('descText').style.whiteSpace = 'pre-wrap';
     };
 
-    // サーバー側で候補を返すAPI（後述のNodeコード）
-    const res = await fetch(
-      "/api/recommend?videoId=" + encodeURIComponent(current.id) +
-      "&channelId=" + encodeURIComponent(current.channelId || "") +
-      "&title=" + encodeURIComponent(current.title)
-    );
-    const data = await res.json();
-    const candidates = Array.isArray(data.videos) ? data.videos : [];
-
-    // スコアリング
-    const currentWords = tokenize(current.title).concat(current.tags || []);
-    const scored = candidates
-      .filter(v => v.id !== current.id)
-      .map(v => {
-        const score = calcScore(current, currentWords, v);
-        return { ...v, _score: score };
-      })
-      .sort((a,b)=>b._score - a._score)
-      .slice(0,20);
-
-    let html = "";
-    scored.forEach(v=>{
-      const duration = v.durationText || "";
-      const viewsText = v.viewCountText || "";
-      html += `
-        <div class="rec-item" onclick="location.href='/video/${v.id}'">
-          <div class="rec-thumb-wrap">
-            <img src="https://i3.ytimg.com/vi/${v.id}/mqdefault.jpg"
-                 onerror="this.src='/fallback-thumb.png'">
-            ${duration ? `<div class="rec-duration">${duration}</div>` : ""}
-          </div>
-          <div class="rec-texts">
-            <div class="rec-title">${escapeHtml(v.title || "")}</div>
-            <div class="rec-channel">${escapeHtml(v.channelName || "")}</div>
-            <div class="rec-meta">
-              ${viewsText ? viewsText + "・" : ""}${v.publishedText || ""}
-            </div>
-          </div>
-        </div>
-      `;
-    });
-    rec.innerHTML = html || "<div style='color:#777;font-size:13px;'>おすすめを取得できませんでした。</div>";
-  }catch(e){
-    console.error(e);
-    rec.innerHTML = "<div style='color:#777;font-size:13px;'>おすすめを取得できませんでした。</div>";
-  }
-})();
-
-/* タイトル類似度＋チャンネル＋タグ＋再生数近さでスコア */
-function calcScore(current, currentWords, v){
-  let score = 0;
-
-  // 同一チャンネルを強く優遇
-  if(current.channelId && v.channelId && current.channelId === v.channelId){
-    score += 40;
-  }else if(current.channelName && v.channelName && current.channelName === v.channelName){
-    score += 25;
-  }
-
-  // タイトル・タグの単語一致
-  const wordsV = tokenize(v.title || "").concat(v.tags || []);
-  const overlap = intersect(currentWords, wordsV).length;
-  score += overlap * 4;
-
-  // 再生数が近いほど加点（桁が近い）
-  const vViews = Number(v.viewCount || 0) || 0;
-  if(current.views && vViews){
-    const diffRatio = Math.abs(Math.log10(current.views+1) - Math.log10(vViews+1));
-    const viewScore = Math.max(0, 20 - diffRatio*10);
-    score += viewScore;
-  }
-
-  // 新しめの動画を少し優遇（publishedTimeTextをざっくり判定）
-  if(typeof v.publishedTimeText === "string"){
-    if(/時間前|日前/.test(v.publishedTimeText)) score += 8;
-    else if(/週間前/.test(v.publishedTimeText)) score += 5;
-    else if(/か月前/.test(v.publishedTimeText)) score += 3;
-  }
-
-  return score;
-}
-
-function tokenize(text){
-  if(!text) return [];
-  // シンプルに空白・記号で分割
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu," ")
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-function intersect(a,b){
-  const setB = new Set(b);
-  const res = [];
-  a.forEach(x=>{
-    if(setB.has(x)) res.push(x);
-  });
-  return res;
-}
-
-function escapeHtml(str){
-  return String(str)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
-}
+    window.onload = loadRecommendations;
 </script>
 
 </body>
 </html>
     `;
     res.send(html);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 });
 
-app.get("/channel/:channelId", async (req, res, next) => {
-  const channelId = req.params.channelId;
-  if (!channelId) {
-    return res.status(400).send("チャンネルIDが必要です");
-  }
-
-  try {
-    const apiBase = apiListCache[0];
-    if (!apiBase) {
-      return res.status(500).send("有効なAPIリストが取得できませんでした。");
-    }
-    const apiUrl = `${apiBase}/api/channels/${channelId}`;
-    const response = await fetchWithTimeout(apiUrl, {}, 4000);
-    if (!response.ok) {
-      return res.status(500).send("チャンネル情報の取得に失敗しました");
-    }
-    const channelData = await response.json();
-    
-    res.render("channel", { channel: channelData });
-  } catch (err) {
-    next(err);
-  }
-});
-
+// --- OTHERS ---
 app.get("/nothing/*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "home.html"));
 });
 
-app.get("/api", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "tools/api.html"));
-});
-app.get("/min-sp", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "staticproxy/min2-p.html"));
-});
-app.get("/helios", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "staticproxy/helios.html"));
-});
-app.get("/highimg", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "oasobi/night.html"));
-});
-app.get("/dl-thumbnail", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/samunedl.html"));
-});
-app.get("/set", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "tools/set.html"));
-});
-app.get("/apps", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "tools/apps.html"));
-});
-
-app.get("/i-img", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "txt/img.html"));
-});
-
-app.get('/api/recommend', async (req,res)=>{
-  const { videoId, channelId, title } = req.query;
-
-  try{
-    // 1. タイトルキーワードで検索
-    const keyword = title || '';
-    const searchResult = await yts.GetListByKeyword(keyword, false, 30, [{type:"video"}]);
-
-    // 2. 同一チャンネルの人気動画も取得（channelId があれば）
-    let channelVideos = { items: [] };
-    if(channelId){
-      channelVideos = await yts.GetListByChannel(channelId, 30, "newest").catch(()=>({items:[]}));
-    }
-
-    // 3. 重複を除きつつ統合
-    const map = new Map();
-    const pushItems = (items, weightSource) => {
-      (items || []).forEach(it=>{
-        if(!it || !it.id) return;
-        if(map.has(it.id)) return;
-        map.set(it.id, {
-          id: it.id,
-          title: it.title,
-          channelName: it.channelTitle || it.channelName || "",
-          channelId: it.channelId || "",
-          durationText: it.lengthText || it.duration || "",
-          viewCount: it.viewCount || it.viewCountText || 0,
-          viewCountText: it.viewCountText || "",
-          publishedText: it.publishedTimeText || "",
-          tags: it.keywords || [],
-          _source: weightSource
-        });
-      });
-    };
-    
-app.get("/bbs", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "chat/chat.html"));
-});
-
-app.get("/compiler", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/compiler.html"));
-});
-
-app.get("/labo5", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/labo5.html"));
-});
-
-app.get("/html-tube", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/html-tube.html"));
-});
-
-
-app.get("/3d-img", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/3d-img.html"));
-});
-
-app.get("/hd", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "oasobi/HD/mp4quality.html"));
-});
-
-app.get("/paste", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/paste.html"));
-});
-
-app.get("/link", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/link.html"));
-});
-
-app.get("/downloader", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "app/yt.html"));
-});
-
-app.get("/about", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "tools/about.html"));
-});
-app.get("/minecraft", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "game/mine.html"));
-});
-app.get("/trend", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "trending.html"));
-});
-app.get("/proxy/client/unblocker-client.js", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "js/node-un-server.js"));
-});
-
-app.get('/all-api', async (req, res) => {
-    const url = 'https://raw.githubusercontent.com/Minotaur-ZAOU/test/refs/heads/main/min-tube2-all-api.json';
-    
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).send('Error fetching data');
-    }
-});
-app.get('/home-ch', async (req, res) => {
-    const url = 'https://raw.githubusercontent.com/Minotaur-ZAOU/test/refs/heads/main/home-ch.txt';
-    
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).send('Error fetching data');
-    }
-});
-app.get('/proxy/*', async (req, res) => {
-    const targetUrl = req.params[0];
-    if (!targetUrl) {
-        res.status(400).send('URLパラメータが必要です');
-        return;
-    }
-
-    const proxyUrl = `https://min-tube2-node-unblocker-server.vercel.app/proxy/${targetUrl}`;
-
-    console.log(`Proxying request for: ${targetUrl}`);
-
-    try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) {
-            res.status(response.status).send(`リクエストエラー: ${response.statusText}`);
-            return;
-        }
-
-        const contentType = response.headers.get('content-type') || '';
-
-        if (contentType.startsWith('text/') || contentType.includes('application/json')) {
-            const text = await response.text();
-            res.set('Content-Type', contentType);
-            res.send(text);
-        } else {
-            const buffer = await response.buffer();
-            res.set('Content-Type', contentType);
-            res.send(buffer);
-        }
-    } catch (error) {
-        console.error('Error fetching URL:', error);
-        res.status(500).send('サーバ内部エラー');
-    }
-});
-
-app.get('/img/:videoId', async (req, res) => {
-  const videoId = req.params.videoId;
-
-  if (!videoId) {
-    res.status(400).send('ちょっとしたエラー。。。');
-    return;
-  }
-
-  const imageUrl = `https://i3.ytimg.com/vi/${videoId}/sddefault.jpg`;
-
-  console.log(`Proxying YouTube thumbnail for video ID: ${videoId}`);
-
-  try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      res.status(response.status).send(`画像取得エラー: ${response.statusText}`);
-      return;
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-
-
-    const buffer = await response.buffer();
-    res.set('Content-Type', contentType);
-    res.send(buffer);
-  } catch (error) {
-    console.error('Error fetching thumbnail:', error);
-    res.status(500).send('サーバ内部エラー');
-  }
-});
-
-app.get('/htmlproxy/*', async (req, res) => {
-  const targetUrl = req.params[0];
-
-  if (!targetUrl) {
-    res.status(400).send('URLパラメータが必要です');
-    return;
-  }
-
-  console.log(`Proxying request for: ${targetUrl}`);
-
-  try {
-    const response = await fetch(targetUrl);
-    if (!response.ok) {
-      res.status(response.status).send(`リクエストエラー: ${response.statusText}`);
-      return;
-    }
-
-
-    const contentType = response.headers.get('content-type') || '';
-
- 
-    if (contentType.startsWith('text/') || contentType.includes('application/json')) {
-      const text = await response.text();
-      res.set('Content-Type', contentType);
-      res.send(text);
-    } else {
-     
-      const buffer = await response.buffer();
-      res.set('Content-Type', contentType);
-      res.send(buffer);
-    }
-  } catch (error) {
-    console.error('Error fetching URL:', error);
-    res.status(500).send('サーバ内部エラー');
-  }
-});
-
-app.get("/highstream/:id", async (req, res, next) => {
-  const videoId = req.params.id;
-  if (!videoId) {
-    return res.status(400).send("動画IDが必要です");
-  }
-
-  try {
-    if (!Array.isArray(apiListCache) || apiListCache.length === 0) {
-      return res.status(500).send("リロードしてください");
-    }
-    const apiList = apiListCache;
-
-    let streamData = null;
-    let successfulApi = null;
-
-    const overallTimeout = 20000;
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < overallTimeout) {
-      for (const apiBase of apiList) {
-        if (Date.now() - startTime >= overallTimeout) break;
-        try {
-
-          const response = await fetchWithTimeout(
-            `${apiBase}/api/video/${videoId}`,
-            {},
-            9000
-          );
-          if (response.ok) {
-            const tempData = await response.json();
-            // highstreamUrl と audioUrl の両方を確認する
-            if (tempData.highstreamUrl && tempData.audioUrl) {
-              streamData = tempData;
-              successfulApi = apiBase;
-              break;
-            }
-          }
-        } catch (err) {
-          console.warn(`${apiBase} でのハイストリーム取得エラー: ${err.message}`);
-          continue;
-        }
-      }
-      if (streamData && streamData.highstreamUrl && streamData.audioUrl) break;
-    }
-
-    if (!streamData || !streamData.highstreamUrl || !streamData.audioUrl) {
-      // 有効なデータが取得できなかった場合のフォールバック処理
-      streamData = streamData || {};
-      streamData.highstreamUrl = "youtube-nocookie";
-      // audioUrl が取得できなければ、空文字または適切なデフォルト値に設定
-      streamData.audioUrl = "";
-    }
-
-    // highstream.ejs テンプレートへ、取得した highstreamUrl と audioUrl を渡してレンダリング
-    return res.render("highstream", streamData);
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.get("/login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-app.get("/sign-in.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "signin.html"));
-});
-app.get("/rireki.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "rireki.html"));
-});
-app.get('/status', (req, res) => {
-  const startHR = process.hrtime();
-  const currentTime = new Date();
-  const uptime = process.uptime();
-
-  const initialDiff = process.hrtime(startHR);
-  const responseTimeMs = initialDiff[0] * 1e3 + initialDiff[1] / 1e6;
-
-  const memoryUsage = process.memoryUsage();
-  const heapUsedMB = memoryUsage.heapUsed / (1024 * 1024);
-
-  const cpuUsage = process.cpuUsage();
-  const totalCpuMicro = cpuUsage.user + cpuUsage.system;
-
-  let responseScore;
-  if (responseTimeMs < 5) {
-    responseScore = 100;
-  } else if (responseTimeMs < 20) {
-    responseScore = 80;
-  } else if (responseTimeMs < 50) {
-    responseScore = 60;
-  } else {
-    responseScore = 40;
-  }
-
-  let memoryScore;
-  if (heapUsedMB < 100) {
-    memoryScore = 100;
-  } else if (heapUsedMB < 200) {
-    memoryScore = 80;
-  } else if (heapUsedMB < 300) {
-    memoryScore = 60;
-  } else {
-    memoryScore = 40;
-  }
-
-  let cpuScore;
-  if (totalCpuMicro < 100000) {
-    cpuScore = 100;
-  } else if (totalCpuMicro < 300000) {
-    cpuScore = 80;
-  } else if (totalCpuMicro < 500000) {
-    cpuScore = 60;
-  } else {
-    cpuScore = 40;
-  }
-
-  const overallScore = Math.round((responseScore + memoryScore + cpuScore) / 3);
-  let healthStatus;
-  if (overallScore >= 90) {
-    healthStatus = `Excellent (${overallScore}%)`;
-  } else if (overallScore >= 70) {
-    healthStatus = `Good (${overallScore}%)`;
-  } else if (overallScore >= 50) {
-    healthStatus = `Fair (${overallScore}%)`;
-  } else {
-    healthStatus = `Poor (${overallScore}%)`;
-  }
-
-
-  const finalDiff = process.hrtime(startHR);
-  const finalResponseTimeMs = finalDiff[0] * 1e3 + finalDiff[1] / 1e6;
-
-  res.json({
-    status: "OK",
-    serverTime: currentTime,
-    uptime: uptime,
-    responseTime: finalResponseTimeMs,
-    memoryUsage: {
-      rss: memoryUsage.rss,
-      heapTotal: memoryUsage.heapTotal,
-      heapUsed: memoryUsage.heapUsed,
-      external: memoryUsage.external,
-    },
-    cpuUsage: cpuUsage,
-    health: healthStatus
-  });
-});
-
-
-
-app.post("/api/save-history", express.json(), async (req, res) => {
-  const { videoId } = req.body;
-
-  if (!videoId) {
-    return res.status(400).json({ error: "videoId必要" });
-  }
-
-  res.json({ success: true });
-});
-
-app.use((req, res, next) => {
-  res.status(404).sendFile(path.join(__dirname, "public", "error.html"));
-});
+// 404/500 Handling
+app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "error.html")));
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(err);
   res.status(500).sendFile(path.join(__dirname, "public", "error.html"));
 });
 
-app.listen(port, () => {
-  console.log(`サーバーがポート ${port} で起動。`);
-});
+app.listen(port, () => console.log(`YouTube Pro is running on port \${port}`));
