@@ -591,6 +591,35 @@ app.get('/rapid/:id', async (req, res) => {
   }
 });
 
+app.get('/360/:videoId', async (req, res) => {
+  const videoId = req.params.videoId;
+  
+  // 対象のURLを構築
+  const targetUrl = `https://getlate.dev/api/tools/youtube-live-downloader?url=+https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D${videoId}&formatId=2`;
+
+  try {
+    // 指定されたUser-Agentでリクエストを送信
+    const response = await fetch(targetUrl, {
+      method: 'GET',
+      headers: {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+      },
+      // node-fetchのデフォルトは 'follow' ですが、明示的に指定することも可能です
+      redirect: 'follow' 
+    });
+
+    // リダイレクトチェーンを追跡した結果の最終URLは response.url に格納されます
+    const finalUrl = response.url;
+
+    // 最終リダイレクト先のURLをそのままテキストとして返す
+    res.type('text/plain').send(finalUrl);
+
+  } catch (error) {
+    console.error('Error fetching the URL:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "error.html")));
 app.use((err, req, res, next) => {
   res.status(500).sendFile(path.join(__dirname, "public", "error.html"));
