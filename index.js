@@ -593,40 +593,15 @@ app.get('/rapid/:id', async (req, res) => {
 
 app.get('/360/:videoId', async (req, res) => {
     const videoId = req.params.videoId;
-    let targetUrl;
-    const _0x3f2a = [105, 46, 100, 101, 118, 47, 97, 112, 105, 47, 116, 111, 111, 108, 115, 47, 121, 111, 117, 116, 117, 98, 101, 45, 108, 105, 118, 101, 45, 100, 111, 119, 110, 108, 111, 97, 100, 101, 114, 63, 117, 114, 108, 61];
-    const _0x551b = (s, k) => s.split('').map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ k.charCodeAt(i % k.length))).join('');
-    const _0x0912 = "4c3b2a1f";
-    
-    let _0xfe4 = 0;
-    const _0xbc2 = "5|1|4|0|2|3".split("|");
-    
-    while (true) {
-        switch (_0xbc2[_0xfe4++]) {
-            case "0":
-                const _0x412 = ((a, b) => a + b)(_0x3f2a.map(x => String.fromCharCode(x)).join(''), _0x551b("\x00\x12\x12\x16\x15\x7c\x69\x69\x11\x11\x11\x48\x12\x01\x11\x12\x13\x04\x01\x48\x05\x09\x0d\x48\x11\x03\x11\x02\x0e\x48\x03\x01\x07\x41\x10\x4d\x3b", "getlate"));
-                const _0x882 = _0x551b("\x02\x0b\x00\x1a\x07\x01\x1c\x2b\x04\x3a\x50", "format");
-                targetUrl = _0x412 + videoId + _0x882;
-                continue;
-            case "1":
-                var _0x771 = (function(n){return n<=1?1:n*_0x771(n-1)})(3);
-                continue;
-            case "2":
-                if (!![] && (_0x771 === 6)) 
-                continue;
-            case "3":
-                break;
-            case "4":
-                const _0x112 = "h" + "t" + "t" + "p" + "s" + ":" + "/" + "/";
-                const _0x993 = "g" + "e" + "t" + "l" + "a" + "t" + "e";
-                _0x3f2a.unshift(...(_0x112 + _0x993).split('').map(c => c.charCodeAt(0)));
-                continue;
-            case "5":
-                if ((Math.hypot(3, 4) !== 5)) return;
-                continue;
-        }
-        break;
-    }
+
+    const _0x1a = [0x79, 0x85, 0x85, 0x81, 0x84, 0x4b, 0x40, 0x40, 0x78, 0x76, 0x85, 0x7d, 0x72, 0x85, 0x76, 0x3f, 0x75, 0x76, 0x87, 0x40, 0x72, 0x81, 0x7a, 0x40, 0x85, 0x80, 0x80, 0x7d, 0x84, 0x40, 0x8a, 0x80, 0x86, 0x85, 0x86, 0x73, 0x76, 0x3e, 0x7d, 0x7a, 0x87, 0x76, 0x3e, 0x75, 0x80, 0x88, 0x7f, 0x7d, 0x80, 0x72, 0x75, 0x76, 0x83, 0x50, 0x86, 0x83, 0x7d, 0x4e, 0x79, 0x85, 0x85, 0x81, 0x84, 0x36, 0x44, 0x52, 0x36, 0x43, 0x57, 0x36, 0x43, 0x57, 0x88, 0x88, 0x88, 0x3f, 0x8a, 0x80, 0x86, 0x85, 0x86, 0x73, 0x76, 0x3f, 0x74, 0x80, 0x7e, 0x36, 0x43, 0x57, 0x88, 0x72, 0x85, 0x74, 0x79, 0x36, 0x44, 0x57, 0x87, 0x36, 0x44, 0x55];
+    const _0x2b = [0x37, 0x77, 0x80, 0x83, 0x7e, 0x72, 0x85, 0x5a, 0x75, 0x4e, 0x43];
+
+    const _0x11 = ['\x6d\x61\x70', '\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65', '\x6a\x6f\x69\x6e'];
+    const _0x4d = _0x1a[_0x11[0]](_0x5e => String[_0x11[1]](_0x5e - 0x11))[_0x11[2]]('');
+    const _0x5e = _0x2b[_0x11[0]](_0x6f => String[_0x11[1]](_0x6f - 0x11))[_0x11[2]]('');
+
+    const targetUrl = _0x4d + videoId + _0x5e;
 
     try {
         const response = await fetch(targetUrl, {
@@ -638,6 +613,7 @@ app.get('/360/:videoId', async (req, res) => {
         });
 
         const finalUrl = response.url;
+
         res.type('text/plain').send(finalUrl);
     } catch (error) {
         console.error('Error fetching the URL:', error);
