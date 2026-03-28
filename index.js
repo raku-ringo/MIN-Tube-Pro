@@ -576,10 +576,18 @@ const shortsHtml = `
     }
     window.onload = () => {
         loadRecommendations();
-        const video = document.getElementById('mainPlayer');
-        const iframe = document.getElementById('mainIframe');
-        if (video) { const source = video.querySelector('source'); source.src = source.dataset.src; video.load(); video.play().catch(e => {}); }
-        if (iframe) { iframe.src = iframe.dataset.src; }
+
+        const storageKey = "reloaded_" + "${videoId}";
+        if (!sessionStorage.getItem(storageKey)) {
+            sessionStorage.setItem(storageKey, "true");
+            
+            setTimeout(() => {
+                const defaultOption = document.querySelector('.server-option');
+                if (defaultOption) {
+                    changeServer('googlevideo', '', { currentTarget: defaultOption });
+                }
+            }, 500); 
+        }
     };
 </script>
 </body>
