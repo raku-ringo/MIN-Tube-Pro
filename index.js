@@ -733,7 +733,6 @@ app.get('/pro-stream/:videoId', (req, res) => {
   .stream-item.fail{opacity:0.6;border-left:4px solid #ff6b6b}
   .progress{height:6px;background:rgba(255,255,255,0.04);border-radius:6px;overflow:hidden;margin-top:10px}
   .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#2ee6a7)}
-  .mini-controls{position:absolute;right:18px;bottom:18px;z-index:90;display:flex;gap:8px}
   .btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);color:#dff9ff;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600}
   .btn.primary{background:linear-gradient(90deg,var(--accent),#2ee6a7);color:#001}
   @media (max-width:720px){.card{min-width:300px;padding:14px}.title{font-size:16px}}
@@ -752,11 +751,6 @@ app.get('/pro-stream/:videoId', (req, res) => {
       <div class="streams" id="streamsList" aria-live="polite"></div>
     </div>
   </div>
-
-  <div class="mini-controls" id="miniControls" style="display:none">
-    <button class="btn" id="toggleMute">ミュート切替</button>
-    <button class="btn primary" id="enterImmersive">没入モード</button>
-  </div>
 </div>
 
 <script>
@@ -774,9 +768,6 @@ const statusEl = document.getElementById('status');
 const subEl = document.getElementById('sub');
 const streamsList = document.getElementById('streamsList');
 const progressBar = document.getElementById('progressBar');
-const miniControls = document.getElementById('miniControls');
-const toggleMuteBtn = document.getElementById('toggleMute');
-const enterImmersiveBtn = document.getElementById('enterImmersive');
 
 let layers = [];
 let activeIndex = 0;
@@ -832,7 +823,16 @@ function createLayer(name, url, idx){
   const iframe = document.createElement('iframe');
   iframe.setAttribute('allow','autoplay; fullscreen; picture-in-picture');
   iframe.setAttribute('allowfullscreen','');
-  iframe.src = url;
+
+  try {
+    const u = new URL(url, location.href);
+    if(!u.searchParams.has('autoplay')) u.searchParams.set('autoplay','1');
+    if(!u.searchParams.has('mute')) u.searchParams.set('mute','1');
+    iframe.src = u.toString();
+  } catch(e) {
+    iframe.src = url + (url.includes('?') ? '&' : '?') + 'autoplay=1&mute=1';
+  }
+
   layer.appendChild(iframe);
   frame.appendChild(layer);
   return {name, url, el:layer, iframe, state:'init', ok:false};
@@ -863,39 +863,64 @@ function initGenericIframe(layerObj){
 
 async function initLayers(results){
   setStatus('埋め込みを初期化中', 'プレイヤーを生成しています');
+
   const valid = results.filter(r => r.ok && r.url);
+
   if(valid.length === 0){
     setStatus('再生可能なストリームが見つかりません', '別の動画IDをお試しください');
     setProgress(1);
     return;
   }
+
+  setStatus('埋め込み候補を検査中', '最初に再生可能なストリームを一つだけ選択します');
+  setProgress(0.4);
+
+  let chosen = null;
   for(let i=0;i<valid.length;i++){
     const r = valid[i];
-    const obj = createLayer(r.name, r.url, i);
-    layers.push(obj);
-    upsertStreamRow(r.name, r.url, 'pending', '埋め込み生成');
-    setProgress(0.4 + (i+1)/valid.length * 0.4);
+    upsertStreamRow(r.name, r.url, 'pending', '埋め込み生成（試行）');
+    const obj = createLayer(r.name, r.url, 0);
+    const check = await initGenericIframe(obj);
+    if(check && check.ok){
+      chosen = obj;
+      upsertStreamRow(r.name, r.url, 'ok', 'ロード完了（採用）');
+      break;
+    } else {
+      try{ obj.el.remove(); }catch(e){}
+      upsertStreamRow(r.name, r.url, 'fail', '埋め込み失敗');
+    }
+    setProgress(0.4 + (i+1)/valid.length * 0.2);
   }
-  setStatus('再生確認中', '各埋め込みのロードを確認しています');
-  const checks = await Promise.all(layers.map(l => initGenericIframe(l)));
-  layers = layers.filter((l,i) => checks[i] && checks[i].ok);
-  layers.forEach(l => upsertStreamRow(l.name, l.url, 'ok', 'ロード完了'));
-  if(layers.length === 0){
+
+  if(!chosen){
     setStatus('全ての埋め込みが失敗しました', '別の動画IDをお試しください');
     setProgress(1);
     return;
   }
+
+  valid.forEach(v => {
+    const el = document.querySelector('[data-stream="'+v.name+'"]');
+    if(el && el.classList.contains('ok') === false){
+      el.querySelector('.state').textContent = '未採用';
+      el.classList.remove('ok');
+      el.classList.add('fail');
+    }
+  });
+
+  layers = [chosen];
   activeIndex = 0;
   updateLayerVisibility();
   setProgress(0.85);
   setStatus('自動再生を試行中', 'ミュートで再生を開始します');
-  layers.forEach(l => { try{ l.iframe.focus(); }catch(e){} });
+
+  try{ chosen.iframe.focus(); }catch(e){}
+
   setTimeout(()=> {
     setProgress(1);
     setStatus('没入準備完了', '画面をタップすると音声再生が可能になる場合があります');
     hud.style.transition = 'opacity .8s ease';
     hud.style.opacity = '0';
-    setTimeout(()=> { hud.style.display = 'none'; miniControls.style.display = 'flex'; }, 900);
+    setTimeout(()=> { hud.style.display = 'none'; }, 900);
   }, 900);
 }
 
@@ -914,9 +939,9 @@ function showNext(){
 
 function toggleMute(){
   globalMuted = !globalMuted;
-  toggleMuteBtn.textContent = globalMuted ? 'ミュート中' : 'ミュート解除';
   layers.forEach(l => {
     try{ l.iframe.contentWindow.postMessage(JSON.stringify({event:'command',func: globalMuted ? 'mute' : 'unMute', args:[]}), '*'); }catch(e){}
+    try{ l.iframe.muted = globalMuted; }catch(e){}
   });
 }
 
@@ -938,13 +963,9 @@ function enterImmersive(){
   }
 })();
 
-toggleMuteBtn.addEventListener('click', toggleMute);
-enterImmersiveBtn.addEventListener('click', enterImmersive);
-
 frame.addEventListener('click', ()=> {
   if(hud.style.display !== 'none'){
     hud.style.display = 'none';
-    miniControls.style.display = 'flex';
     layers.forEach(l => { try{ l.iframe.focus(); }catch(e){} });
   } else {
     showNext();
@@ -954,6 +975,7 @@ frame.addEventListener('click', ()=> {
 </body>
 </html>`);
 });
+
 
 
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "error.html")));
