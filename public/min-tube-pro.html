@@ -66,7 +66,7 @@
     <header class="hero" aria-labelledby="hero-title">
       <div class="hero-left">
         <div class="brand">
-          <img src="/min-img.png" alt="MIN-Tube-Pro" class="logo-img" />
+          <img src="img/min-tube-pro.png" alt="MIN-Tube-Pro ロゴ" class="logo-img" />
           <div>
             <div id="hero-title" class="title">MIN‑Tube‑Pro</div>
             <div class="subtitle">アプリランチャー — すばやく、快適に</div>
@@ -172,15 +172,15 @@
 
       <article class="card" role="button" tabindex="0" data-endpoint="/unblockers" aria-label="Unblockers — ブロックされていないプロキシ">
         <div class="row">
-          <div class="icon">🔓</div>
+          <div class="icon">📚</div>
           <div>
-            <div class="app-title">Unblockers</div>
-            <div class="app-desc">ブロックされていないプロキシを取得して提供します。</div>
+            <div class="app-title">ブログ</div>
+            <div class="app-desc">APIの使い方など有益な情報を提供します。ホストすることでGithubからだれでも書き込めます。</div>
           </div>
         </div>
         <div class="row">
-          <div class="endpoint">/unblockers</div>
-          <div class="badge">プロキシ</div>
+          <div class="endpoint">/blog</div>
+          <div class="badge">開く</div>
         </div>
       </article>
 
@@ -203,6 +203,7 @@
   </div>
 
 <script>
+  // Typewriter welcome text (slower)
   const welcomePhrases = [
     "Welcome to MIN‑Tube‑Pro ✨",
     "動画をもっと快適に。🎬",
@@ -210,6 +211,7 @@
   ];
   const el = document.getElementById('welcomeText');
   let pi = 0, ci = 0, forward = true;
+  // 調整ポイント: typingDelay = 90ms, deletingDelay = 60ms, pauseBetweenPhrases = 2200ms
   const typingDelay = 90;
   const deletingDelay = 60;
   const pauseBetweenPhrases = 2200;
@@ -229,6 +231,8 @@
     }
   }
 
+  setTimeout(tick, 600);
+
   document.querySelectorAll('.card').forEach(card=>{
     const endpoint = card.dataset.endpoint || '/';
     function openEndpoint(){
@@ -240,6 +244,7 @@
     });
   });
 
+  // Accessibility: mark first card for focus
   const firstCard = document.querySelector('.card');
   if(firstCard) firstCard.setAttribute('aria-pressed','false');
 </script>
