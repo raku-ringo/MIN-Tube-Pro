@@ -120,20 +120,27 @@
       .video-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; row-gap: 20px; }
     }
 
-    .home-btn {
+.home-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  color: white;
+  background: white;
+  border: 2px solid var(--chip-background);
+  color: var(--primary-color);
+  font-size: 24px;
   text-decoration: none;
-  transition: background 0.2s;
-  font-size: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
 }
+
 .home-btn:hover {
-  background: var(--chip-hover);
+  background: #f0f0f0;
+  border-color: var(--chip-hover);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
   </style>
 </head>
