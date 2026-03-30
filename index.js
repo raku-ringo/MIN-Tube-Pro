@@ -1006,6 +1006,14 @@ app.get("/nautilus-os", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "proxy/NautilusOS.html"));
 });
 
+app.get("/unblockers", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "app/search.html"));
+});
+
+app.get("/labo5", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "app/html-tube.html"));
+});
+
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "error.html")));
 app.use((err, req, res, next) => {
   res.status(500).sendFile(path.join(__dirname, "public", "error.html"));
