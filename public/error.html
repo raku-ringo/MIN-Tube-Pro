@@ -119,6 +119,61 @@
       .container { padding: 0 14px 80px; margin-top: 120px; }
       .video-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; row-gap: 20px; }
     }
+
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px; 
+  color: #fff;
+  text-decoration: none;
+  font-size: 20px;
+  font-weight: 600;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 3px solid rgba(255,255,255,0.12); 
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  backdrop-filter: blur(4px);
+}
+
+.home-btn:hover,
+.home-btn:focus {
+  transform: translateY(-3px);
+  border-color: var(--chip-hover);
+  background: linear-gradient(180deg, var(--chip-hover), color-mix(in srgb, var(--chip-hover) 60%, black));
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45), 0 0 18px rgba(0,0,0,0.12);
+  outline: none;
+}
+
+.home-btn:focus-visible {
+  box-shadow: 0 0 0 4px rgba(100,150,255,0.18), 0 12px 30px rgba(0,0,0,0.45);
+  border-color: #6496ff;
+}
+
+
+.home-btn .icon {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+
+.home-btn.neon {
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #0ff 10%, #6cf 60%);
+  border: 2px solid rgba(255,255,255,0.06);
+  box-shadow: 0 0 18px rgba(102,204,255,0.28), 0 8px 24px rgba(0,0,0,0.45);
+}
+.home-btn.neon:hover {
+  box-shadow: 0 0 30px rgba(102,204,255,0.45), 0 12px 36px rgba(0,0,0,0.5);
+  transform: translateY(-4px) scale(1.03);
+}
+
+
   </style>
 </head>
 <body>
@@ -130,7 +185,7 @@
         <button type="submit">🔍</button>
       </form>
     </div>
-    <div style="width:40px;"></div>
+ <a href="/youtube-pro" class="home-btn" title="ホーム">🏠</a>
   </header>
 
   <div class="chips-bar">
