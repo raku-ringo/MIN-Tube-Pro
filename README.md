@@ -1,14 +1,14 @@
 # MIN-Tube-Pro
 
-CG / YouTube helper web app.  
-「MIN-Tube-Pro」は、YouTube や動画視聴をより快適にするためのシンプルな Web アプリです。  
+CG / YouTube web app.  
+「MIN-Tube-Pro」は、YouTube や動画視聴をより快適にするための Web アプリです。  
 ブラウザからすぐにアクセスでき、PC・スマホ問わず軽量に動作することを目指しています。
 
 デモ: https://min-tube2.vercel.app
 
 ---
 
-## デプロイボタン
+## デプロイ
 
 ワンクリックで自分の環境にデプロイできます。
 
