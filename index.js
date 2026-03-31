@@ -692,12 +692,19 @@ app.get('/360/:videoId', async (req, res) => {
     }
 });
 
-app.get('/scratch-edu/:id', (req, res) => {
+app.get('/scratch-edu/:id', async (req, res) => {
   const id = req.params.id;
-  const url = `https://www.youtubeeducation.com/embed/${id}?autoplay=1&mute=0&controls=1&start=0&origin=https%3A%2F%2Fscratch.mit.edu&playsinline=1&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&fs=1&cc_load_policy=0&enablejsapi=1&widgetid=1&forigin=https%3A%2F%2Fscratch.mit.edu&aoriginsup=1&vf=6&embed_config=%7B%22enc%22%3A%22AXH1ezlhgHEmwog95ozjlKnxiKfG1CdBaqMrUvsJ9N4Nq3JwTZQipoCKHhbuqulfwKUQMVszf0myTUs30IpoNmaQBAF3uqqKhk3qnpjNVCzgKVMVkaQxYNhOGG7kxkEIFPqiKmtAdB8olrPnh_Cv1Z6ftDpPkwGJ2Q%3D%3D%22%2C%22hideTitle%22%3Atrue%7D`;
+
+  const configUrl = 'https://raw.githubusercontent.com/siawaseok3/wakame/master/video_config.json';
+  const configRes = await fetch(configUrl);
+  const configJson = await configRes.json();
+  const params = configJson.params; 
+
+  const url = `https://www.youtubeeducation.com/embed/${id}${params}`;
   res.set('Content-Type', 'text/plain; charset=utf-8');
   res.send(url);
 });
+
 
 app.get('/kahoot-edu/:id', (req, res) => {
   const id = req.params.id;
