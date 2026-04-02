@@ -197,16 +197,19 @@ app.get("/video/:id", async (req, res, next) => {
 
     for (const apiBase of apiListCache) {
       try {
-        const response = await fetchWithTimeout(`${apiBase}/api/video/${videoId}`, {}, 5000);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.stream_url) {
-            videoData = data;
-            successfulApi = apiBase;
-            break;
-          }
-        }
-        throw new Error("Fetch failed");
+        videoData = await Promise.any([
+          fetchWithTimeout(`${apiBase}/api/video/${videoId}`, {}, 5000)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => data.stream_url ? data : Promise.reject()),
+          fetchWithTimeout(`${protocol}://${host}/sia-dl/${videoId}`, {}, 5000)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => data.stream_url ? data : Promise.reject())
+        ]);
+
+
+        successfulApi = apiBase;
+        break;
+
       } catch (e) {
         try {
           const rapidRes = await fetchWithTimeout(`${protocol}://${host}/rapid/${videoId}`, {}, 5000);
@@ -214,7 +217,6 @@ app.get("/video/:id", async (req, res, next) => {
             const rapidData = await rapidRes.json();
             if (rapidData.stream_url) {
               videoData = rapidData;
-              // 【修正箇所】Rapidで成功した場合も、コメント取得のためにapiBaseを保持してループを抜ける
               successfulApi = apiBase; 
               break; 
             }
@@ -228,7 +230,6 @@ app.get("/video/:id", async (req, res, next) => {
       videoData = { videoTitle: "再生できない動画", stream_url: "youtube-nocookie" };
     }
 
-    // 【この共通処理】successfulApi がセットされていれば、Rapid経由の動画でもコメントを取得しにいく
     if (successfulApi) {
       try {
         const cRes = await fetchWithTimeout(`${successfulApi}/api/comments/${videoId}`, {}, 3000);
