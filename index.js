@@ -1055,7 +1055,7 @@ app.get('/sia-dl/:videoId', async (req, res) => {
 });
 
 app.get('/ai-fetch/:videoId', async (req, res) => {
-    const _0x5a1e = ['\x6c\x69\x6b\x65\x43\x6f\x75\x6e\x74', '\x76\x69\x64\x65\x6f\x44\x65\x73', '\x67\x65\x74', '\x68\x6f\x73\x74', '\x61\x62\x6f\x72\x74', '\x74\x65\x78\x74', '\x70\x72\x6f\x74\x6f\x63\x6f\x6c', '\x6a\x73\x6f\x6e', '\x76\x69\x64\x65\x6f\x49\x64', '\x65\x72\x72\x6f\x72', '\x61\x69\x2d\x66\x65\x74\x63\x68', '\x68\x74\x74\x70\x73\x3a\x2f\x2f\x61\x70\x69\x2e\x61\x69\x6a\x69\x6d\x79\x2e\x63\x6f\x6d\x2f\x67\x65\x74\x3f\x63\x6f\x64\x65\x3=get-youtube-videodata&text=', '\x73\x74\x61\x74\x75\x73'];
+    const _0x5a1e = ['\x6c\x69\x6b\x65\x43\x6f\x75\x6e\x74', '\x76\x69\x64\x65\x6f\x44\x65\x73', '\x67\x65\x74', '\x68\x6f\x73\x74', '\x61\x62\x6f\x72\x74', '\x74\x65\x78\x74', '\x70\x72\x6f\x74\x6f\x63\x6f\x6c', '\x6a\x73\x6f\x6e', '\x76\x69\x64\x65\x6f\x49\x64', '\x65\x72\x72\x6f\x72', '\x61\x69\x2d\x66\x65\x74\x63\x68', '\x68\x74\x74\x70\x73\x3a\x2f\x2f\x61\x70\x69\x2e\x61\x69\x6a\x69\x6d\x79\x2e\x63\x6f\x6d\x2f\x67\x65\x74\x3f\x63\x6f\x64\x65\x3d\x67\x65\x74\x2d\x79\x6f\x75\x74\x75\x62\x65\x2d\x76\x69\x64\x65\x6f\x64\x61\x74\x61\x26\x74\x65\x78\x74\x3d', '\x73\x74\x61\x74\x75\x73'];
     const _0x42f1 = function(_0x2d12f3, _0x5a1e3e) {
         _0x2d12f3 = _0x2d12f3 - 0x0;
         let _0x4b3c2a = _0x5a1e[_0x2d12f3];
@@ -1083,42 +1083,26 @@ app.get('/ai-fetch/:videoId', async (req, res) => {
 
         let videoTitle = videoId; 
         let channelName = videoId;
-        let found = false;
-
+        
         try {
-            const noEmbedRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-            if (noEmbedRes.ok) {
-                const noEmbedData = await noEmbedRes.json();
-                if (noEmbedData && !noEmbedData.error) {
-                    videoTitle = noEmbedData.title || videoId;
-                    channelName = noEmbedData.author_name || videoId;
-                    found = true; 
-                }
-            }
-        } catch (noEmbedErr) {
-            console.error("noembed API Error:", noEmbedErr);
-        }
-
-        if (!found) {
-            try {
-                let page = 0;
-                while (page < 10 && !found) {
-                    const searchResults = await yts.GetListByKeyword(videoId, false, 20, page);
-                    if (searchResults && searchResults.items && searchResults.items.length > 0) {
-                        const matchedVideo = searchResults.items.find(item => item.id === videoId);
-                        if (matchedVideo) {
-                            videoTitle = matchedVideo.title || videoId;
-                            channelName = (matchedVideo.author && matchedVideo.author.name) ? matchedVideo.author.name : videoId;
-                            found = true;
-                        }
-                    } else {
-                        break;
+            let page = 0;
+            let found = false;
+            while (page < 10 && !found) {
+                const searchResults = await yts.GetListByKeyword(videoId, false, 20, page);
+                if (searchResults && searchResults.items && searchResults.items.length > 0) {
+                    const matchedVideo = searchResults.items.find(item => item.id === videoId);
+                    if (matchedVideo) {
+                        videoTitle = matchedVideo.title || videoId;
+                        channelName = (matchedVideo.author && matchedVideo.author.name) ? matchedVideo.author.name : videoId;
+                        found = true;
                     }
-                    page++;
+                } else {
+                    break;
                 }
-            } catch (searchErr) {
-                console.error("Search API Error:", searchErr);
+                page++;
             }
+        } catch (searchErr) {
+            console.error("Search API Error:", searchErr);
         }
 
         const protocol = req[_0x42f1('0x6')];
