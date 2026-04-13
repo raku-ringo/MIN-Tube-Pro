@@ -185,66 +185,70 @@ app.get("/api/recommendations", async (req, res) => {
 });
 
 app.get("/video/:id", async (req, res, next) => {
-  const videoId = req.params.id;
-  
+const videoId = req.params.id;
+try {
+let videoData = null;
+let commentsData = { commentCount: 0, comments: [] };
+let successfulApi = null;
+
+const protocol = req.headers['x-forwarded-proto'] || 'http';
+const host = req.headers.host;
+
+for (const apiBase of apiListCache) {
   try {
-    let videoData = null;
-    let commentsData = { commentCount: 0, comments: [] };
-    let successfulApi = null;
+    videoData = await Promise.any([
+      fetchWithTimeout(`${apiBase}/api/video/${videoId}`, {}, 5000)
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => data.stream_url ? data : Promise.reject()),
+      fetchWithTimeout(`${protocol}://${host}/sia-dl/${videoId}`, {}, 5000)
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => data.stream_url ? data : Promise.reject()),
 
-    const protocol = req.headers['x-forwarded-proto'] || 'http';
-    const host = req.headers.host;
-
-    for (const apiBase of apiListCache) {
-      try {
-        videoData = await Promise.any([
-          fetchWithTimeout(`${apiBase}/api/video/${videoId}`, {}, 5000)
+      new Promise((resolve, reject) => {
+        setTimeout(() => {
+          fetchWithTimeout(`${protocol}://${host}/ai-fetch/${videoId}`, {}, 5000)
             .then(res => res.ok ? res.json() : Promise.reject())
-            .then(data => data.stream_url ? data : Promise.reject()),
-          fetchWithTimeout(`${protocol}://${host}/sia-dl/${videoId}`, {}, 5000)
-            .then(res => res.ok ? res.json() : Promise.reject())
-            .then(data => data.stream_url ? data : Promise.reject()),
-
-          new Promise((resolve, reject) => {
-            setTimeout(() => {
-              fetchWithTimeout(`${protocol}://${host}/ai-fetch/${videoId}`, {}, 5000)
-                .then(res => res.ok ? res.json() : Promise.reject())
-                .then(data => data.stream_url ? resolve(data) : reject())
-                .catch(reject);
-            }, 2000);
-          })
-        ]);
+            .then(data => data.stream_url ? resolve(data) : reject())
+            .catch(reject);
+        }, 2000);
+      })
+    ]);
 
 
-        successfulApi = apiBase;
-        break;
+    try {
+      const cRes = await fetchWithTimeout(`${apiBase}/api/comments/${videoId}`, {}, 3000);
+      if (cRes.ok) commentsData = await cRes.json();
+    } catch (e) {}
 
-      } catch (e) {
-        try {
-          const rapidRes = await fetchWithTimeout(`${protocol}://${host}/rapid/${videoId}`, {}, 5000);
-          if (rapidRes.ok) {
-            const rapidData = await rapidRes.json();
-            if (rapidData.stream_url) {
-              videoData = rapidData;
-              successfulApi = apiBase; 
-              break; 
-            }
-          }
-        } catch (rapidErr) {}
-        continue;
+    successfulApi = apiBase;
+    break;
+
+  } catch (e) {
+    try {
+      const rapidRes = await fetchWithTimeout(`${protocol}://${host}/rapid/${videoId}`, {}, 5000);
+      if (rapidRes.ok) {
+        const rapidData = await rapidRes.json();
+        if (rapidData.stream_url) {
+          videoData = rapidData;
+          
+          try {
+            const cRes = await fetchWithTimeout(`${apiBase}/api/comments/${videoId}`, {}, 3000);
+            if (cRes.ok) commentsData = await cRes.json();
+          } catch (e) {}
+
+          successfulApi = apiBase; 
+          break; 
+        }
       }
-    }
+    } catch (rapidErr) {}
+    continue;
+  }
+}
 
-    if (!videoData) {
-      videoData = { videoTitle: "再生できない動画", stream_url: "youtube-nocookie" };
-    }
+if (!videoData) {
+  videoData = { videoTitle: "再生できない動画", stream_url: "youtube-nocookie" };
+}
 
-    if (successfulApi) {
-      try {
-        const cRes = await fetchWithTimeout(`${successfulApi}/api/comments/${videoId}`, {}, 3000);
-        if (cRes.ok) commentsData = await cRes.json();
-      } catch (e) {}
-    }
 
     const isShortForm = videoData.videoTitle.includes('#');
 
