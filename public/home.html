@@ -173,58 +173,60 @@
       transform: translateY(-4px) scale(1.03);
     }
 
-    /* Version Badge - Floating Neon Style */
+    /* --- 新規追加: バージョン表示用スタイル (モダンネオン・ダーク虹色) --- */
     .version-badge {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: linear-gradient(135deg, rgba(20, 20, 20, 0.8), rgba(10, 10, 10, 0.9));
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #aaa;
-      padding: 6px 14px;
-      border-radius: 999px;
+      position: absolute;
+      right: 80px; /* ホームボタンのすぐ左側に配置 */
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 4px 10px;
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
-      font-family: monospace;
-      z-index: 2000;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      font-weight: 800;
+      color: #fff;
+      background: rgba(15, 15, 15, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 
+        0 0 10px rgba(255, 105, 180, 0.15), 
+        0 0 15px rgba(0, 255, 255, 0.15),
+        inset 0 1px 2px rgba(255, 255, 255, 0.05);
+      opacity: 0; 
+      transition: opacity 0.8s ease, transform 0.3s ease, box-shadow 0.3s ease;
+      letter-spacing: 0.5px;
+      z-index: 10;
+      pointer-events: none;
       display: flex;
       align-items: center;
-      gap: 8px;
-      cursor: default;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      gap: 4px;
+      font-family: 'Courier New', Courier, monospace;
     }
+    
+    .version-badge.show {
+      opacity: 1;
+    }
+
     .version-badge::before {
-      content: '';
-      display: block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background-color: #0ff;
-      box-shadow: 0 0 8px #0ff, 0 0 16px #0ff;
-      transition: all 0.3s ease;
+      content: '🌐'; 
+      font-size: 11px;
+      filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.6));
     }
-    .version-badge:hover {
-      color: #fff;
-      border-color: rgba(0, 255, 255, 0.4);
-      background: rgba(0, 255, 255, 0.08);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 255, 255, 0.2);
-      transform: translateY(-4px);
+
+    .version-badge-text {
+      background: linear-gradient(135deg, #ff7eb3, #7eb3ff, #00f2fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 8px rgba(126, 179, 255, 0.3);
     }
-    .version-badge:hover::before {
-      background-color: #fff;
-      box-shadow: 0 0 12px #fff, 0 0 24px #fff;
-    }
+
     @media (max-width: 520px) {
       .version-badge {
-        bottom: 16px;
-        right: 16px;
+        right: 65px;
+        padding: 3px 8px;
         font-size: 11px;
-        padding: 5px 12px;
+      }
+      .version-badge::before {
+        font-size: 9px;
       }
     }
   </style>
@@ -238,7 +240,8 @@
         <button type="submit">🔍</button>
       </form>
     </div>
- <a href="/youtube-pro" class="home-btn" title="ホーム">🏠</a>
+    <a href="/youtube-pro" class="home-btn" title="ホーム">🏠</a>
+    <div id="appVersion" class="version-badge"><span class="version-badge-text"></span></div>
   </header>
 
   <div class="chips-bar">
@@ -584,23 +587,25 @@
       }
     };
 
-    // --- Version Fetch & Display ---
-    document.addEventListener('DOMContentLoaded', async () => {
+    async function fetchAndShowVersion() {
       try {
         const res = await fetch('/version');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.version) {
-            const badge = document.createElement('div');
-            badge.className = 'version-badge';
-            badge.textContent = `v${data.version}`;
-            document.body.appendChild(badge);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.version) {
+          const badge = document.getElementById('appVersion');
+          const textEl = badge.querySelector('.version-badge-text');
+          if (badge && textEl) {
+            textEl.textContent = 'v' + data.version;
+            badge.classList.add('show');
           }
         }
       } catch (err) {
-        console.error("Failed to fetch version info:", err);
+        console.error('バージョン取得エラー', err);
       }
-    });
+    }
+
+    fetchAndShowVersion();
   </script>
 </body>
 </html>
