@@ -723,7 +723,7 @@ app.get('/scratch-edu/:id', async (req, res) => {
 app.get('/kahoot-edu/:id', async (req, res) => {
   const id = req.params.id;
 
-  const paramUrl = 'https://raw.githubusercontent.com/woolisbest-4520/about-youtube/refs/heads/main/edu/parameter.txt';
+  const paramUrl = 'https://raw.githubusercontent.com/wista-api-project/auto/refs/heads/main/edu/1.txt';
   const response = await fetch(paramUrl);
   const params = await response.text(); 
 
