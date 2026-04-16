@@ -278,7 +278,7 @@
 
     let games;
     try {
-      const res = await fetch('games.json');
+      const res = await fetch('/games.json');
       if (!res.ok) throw new Error(res.statusText);
       games = await res.json();
     } catch (err) {
