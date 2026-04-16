@@ -20,8 +20,7 @@
       }
       *{box-sizing:border-box}
       html,body{height:100%;margin:0;font-family:Inter,"Noto Sans JP",system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);-webkit-font-smoothing:antialiased}
-    
-      /* ── back button ── */
+
       .back-btn{
         display:inline-flex;align-items:center;gap:8px;
         color:var(--muted);font-size:13px;text-decoration:none;
@@ -33,10 +32,9 @@
       }
       .back-btn:hover{color:var(--accent);background:rgba(0,212,255,0.07)}
       .back-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-    
+
       .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 20px;gap:28px}
-    
-      /* ── hero ── */
+
       .hero{
         width:100%;max-width:1100px;display:flex;align-items:center;justify-content:space-between;gap:20px;
         background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
@@ -55,16 +53,14 @@
       .tagline{font-size:14px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:8px}
       .tagline .spark{width:8px;height:8px;border-radius:50%;background:linear-gradient(90deg,#fff,#00d4ff);box-shadow:0 0 14px #00d4ff;animation:pulse 2s infinite;flex-shrink:0}
       @keyframes pulse{0%{transform:scale(0.9);opacity:0.8}50%{transform:scale(1.2);opacity:1}100%{transform:scale(0.9);opacity:0.8}}
-    
-      /* orbs */
+
       .hero-right{position:relative;width:220px;height:80px;display:flex;align-items:center;justify-content:center}
       .orb{position:absolute;border-radius:50%;filter:blur(28px);opacity:0.18}
       .orb.a{width:160px;height:160px;background:linear-gradient(90deg,#00d4ff,#6a00ff);left:-20px;top:-40px;animation:floatA 8s ease-in-out infinite}
       .orb.b{width:120px;height:120px;background:linear-gradient(90deg,#ffd36a,#ff7ab6);right:-10px;bottom:-20px;animation:floatB 10s ease-in-out infinite}
       @keyframes floatA{0%{transform:translateY(0)}50%{transform:translateY(-12px)}100%{transform:translateY(0)}}
       @keyframes floatB{0%{transform:translateY(0)}50%{transform:translateY(10px)}100%{transform:translateY(0)}}
-    
-      /* ── filter tabs ── */
+
       .filter-bar{
         width:100%;max-width:1100px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
       }
@@ -78,11 +74,9 @@
         background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.4);
         color:var(--accent);font-weight:600;
       }
-    
-      /* ── grid ── */
+
       .grid{width:100%;max-width:1100px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
-    
-      /* ── game card ── */
+
       .game-card{
         background:var(--card);border-radius:12px;border:1px solid var(--glass-border);
         overflow:hidden;cursor:pointer;
@@ -95,8 +89,7 @@
         border-color:rgba(0,212,255,0.22);
       }
       .game-card:focus{outline:2px solid var(--accent);outline-offset:2px}
-    
-      /* thumbnail area */
+
       .thumb{
         position:relative;width:100%;height:150px;overflow:hidden;
         background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(0,0,0,0.2));
@@ -104,15 +97,12 @@
       }
       .thumb .big-icon{font-size:60px;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.6));transition:transform .25s ease}
       .game-card:hover .big-icon{transform:scale(1.12) rotate(-3deg)}
-    
-      /* gradient overlay on thumb */
       .thumb::after{
         content:'';position:absolute;inset:0;
         background:linear-gradient(to bottom,transparent 40%,rgba(7,16,41,0.8));
         pointer-events:none;
       }
-    
-      /* play overlay */
+
       .play-overlay{
         position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
         background:rgba(0,0,0,0.45);opacity:0;transition:opacity .2s;z-index:2;
@@ -126,30 +116,24 @@
         box-shadow:0 0 24px rgba(0,212,255,0.5);
         font-size:20px;
       }
-    
-      /* genre badge on thumb */
+
       .genre-badge{
         position:absolute;top:10px;right:10px;z-index:3;
         font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;
         background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.1);
         color:var(--muted);backdrop-filter:blur(4px);
       }
-    
-      /* new badge */
       .new-badge{
         position:absolute;top:10px;left:10px;z-index:3;
         font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
         background:linear-gradient(90deg,var(--accent),#6a00ff);color:#fff;
         box-shadow:0 0 12px rgba(0,212,255,0.4);
       }
-    
-      /* card body */
+
       .card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
       .card-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
       .card-title{font-weight:700;font-size:15px}
-      .status-dot{
-        width:9px;height:9px;border-radius:50%;flex-shrink:0;position:relative;
-      }
+      .status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;position:relative;}
       .status-dot.done{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.7)}
       .status-dot.done::after{
         content:'';position:absolute;inset:0;border-radius:50%;
@@ -158,26 +142,21 @@
       .status-dot.wip{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.6)}
       @keyframes ping{0%{transform:scale(1);opacity:0.6}70%{transform:scale(2.2);opacity:0}100%{transform:scale(2.2);opacity:0}}
       .card-desc{color:var(--muted);font-size:13px;line-height:1.45;flex:1}
-    
+
       .card-footer{
         display:flex;align-items:center;justify-content:space-between;
         padding-top:8px;border-top:1px solid var(--glass-border);
       }
       .card-tag{font-family:monospace;font-size:12px;color:#bfefff;background:rgba(0,0,0,0.12);padding:4px 8px;border-radius:6px}
       .card-players{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
-    
-      /* stats row */
-      .stats-row{display:flex;align-items:center;gap:14px}
-      .stat{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
-      .stat svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:0.7}
-    
-      /* empty state */
-      .empty{
-        grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:15px;
-      }
-    
+
+      .empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:15px;}
+
+      /* coming-soon placeholder style */
+      .game-card.coming-soon{opacity:0.45;pointer-events:none}
+
       .footer{max-width:1100px;color:var(--muted);font-size:13px;text-align:center;padding:8px 12px;border-radius:10px}
-    
+
       @media(max-width:640px){
         .hero{flex-direction:column;align-items:flex-start}
         .hero-right{display:none}
@@ -187,15 +166,13 @@
 
 <body>
   <div class="wrap" role="main">
-    <!-- back nav -->
     <div style="width:100%;max-width:1100px">
       <a href="/" class="back-btn" aria-label="ホームへ戻る">
-        <svg viewbox="0 0 24 24">
-          <polyline points="15 18 9 12 15 6">
-          </polyline>
-        </svg>ホームへ戻る</a>
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        ホームへ戻る
+      </a>
     </div>
-    <!-- hero -->
+
     <header class="hero" aria-labelledby="page-title">
       <div class="hero-left">
         <div class="brand">
@@ -206,216 +183,133 @@
           </div>
         </div>
         <div class="tagline">
-          <div class="spark" aria-hidden="true">
-          </div>ブラウザで即プレイ。インストール不要。</div>
+          <div class="spark" aria-hidden="true"></div>
+          ブラウザで即プレイ。インストール不要。
+        </div>
       </div>
       <div class="hero-right" aria-hidden="true">
-        <div class="orb a">
-        </div>
-        <div class="orb b">
-        </div>
+        <div class="orb a"></div>
+        <div class="orb b"></div>
       </div>
     </header>
-    <!-- filter tabs -->
-    <nav class="filter-bar" aria-label="ジャンルフィルター">
+
+    <nav class="filter-bar" aria-label="ジャンルフィルター" id="filterBar">
       <button class="filter-tab active" data-genre="all">🎲 すべて</button>
       <button class="filter-tab" data-genre="strategy">♟️ ストラテジー</button>
       <button class="filter-tab" data-genre="action">⚡ アクション</button>
       <button class="filter-tab" data-genre="puzzle">🧩 パズル</button>
       <button class="filter-tab" data-genre="arcade">👾 アーケード</button>
     </nav>
-    <!-- game grid -->
-    <section class="grid" id="gameGrid" aria-label="ゲーム一覧">
-      <!-- Tower Defense -->
-      <article class="game-card" role="button" tabindex="0" data-genre="strategy" data-href="/game/play.html?game=tower-defense" aria-label="タワーディフェンス — プレイする">
-        <div class="thumb">
-          <span class="new-badge">NEW</span>
-          <span class="genre-badge">ストラテジー</span>
-          <div class="big-icon">🏰</div>
-          <div class="play-overlay" aria-hidden="true">
-            <div class="play-btn">▶</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="card-title-row">
-            <span class="card-title">タワーディフェンス</span>
-            <span class="status-dot done" title="実装済み" aria-label="実装済み">
-            </span>
-          </div>
-          <div class="card-desc">押し寄せる敵をタワーで食い止めろ！ウェーブをすべて乗り越えてベースを守り抜け。リソース管理と配置戦略が鍵。</div>
-          <div class="card-footer">
-            <span class="card-tag">tower-defense</span>
-            <span class="card-players">
-              <svg width="13" height="13" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2">
-                </path>
-                <circle cx="12" cy="7" r="4">
-                </circle>
-              </svg>1人プレイ</span>
-          </div>
-        </div>
-      </article>
-      <!-- Brick Breaker -->
-      <article class="game-card" role="button" tabindex="0" data-genre="arcade" data-href="/game/play.html?game=brick-breaker" aria-label="Brick Breaker — プレイする">
-        <div class="thumb">
-          <span class="new-badge">NEW</span>
-          <span class="genre-badge">アーケード</span>
-          <div class="big-icon">🧱</div>
-          <div class="play-overlay" aria-hidden="true">
-            <div class="play-btn">▶</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="card-title-row">
-            <span class="card-title">Brick Breaker</span>
-            <span class="status-dot done" title="実装済み">
-            </span>
-          </div>
-          <div class="card-desc">ボールを跳ね返してすべてのブロックを破壊しよう！</div>
-          <div class="card-footer">
-            <span class="card-tag">brick-breaker</span>
-            <span class="card-players">
-              <svg width="13" height="13" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2">
-                </path>
-                <circle cx="12" cy="7" r="4">
-                </circle>
-              </svg>1人プレイ</span>
-          </div>
-        </div>
-      </article>
-      <article class="game-card" role="button" tabindex="0" data-genre="arcade" data-href="/game/play.html?game=paper">
-        <div class="thumb">
-          <span class="new-badge">NEW</span>
-          <span class="genre-badge">アーケード</span>
-          <div class="big-icon">🟦</div>
-          <div class="play-overlay">
-            <div class="play-btn">▶</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="card-title-row">
-            <span class="card-title">Paper.io</span>
-            <span class="status-dot done">
-            </span>
-          </div>
-          <div class="card-desc">自分の陣地を広げて相手を倒せ！ラインを切られると即終了⚡</div>
-          <div class="card-footer">
-            <span class="card-tag">paper</span>
-            <span class="card-players">1人プレイ</span>
-          </div>
-        </div>
-      </article>
-      <article class="game-card" role="button" tabindex="0" data-genre="arcade" data-href="/game/play.html?game=snow">
-  <div class="thumb">
-    <span class="new-badge">NEW</span>
-    <span class="genre-badge">アーケード</span>
-    <div class="big-icon">❄️</div>
-    <div class="play-overlay">
-      <div class="play-btn">▶</div>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="card-title-row">
-      <span class="card-title">SnowBall.io</span>
-      <span class="status-dot done"></span>
-    </div>
-    <div class="card-desc">雪玉を転がして巨大化！敵を落とせ！</div>
-    <div class="card-footer">
-      <span class="card-tag">snow</span>
-      <span class="card-players">1人プレイ</span>
-    </div>
-  </div>
-</article>
-<article class="game-card" role="button" tabindex="0" data-genre="action" data-href="/game/play.html?game=snowride">
-  <div class="thumb">
-    <span class="new-badge">NEW</span>
-    <span class="genre-badge">アクション</span>
-    <div class="big-icon">🏂</div>
-    <div class="play-overlay">
-      <div class="play-btn">▶</div>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="card-title-row">
-      <span class="card-title">SnowRide</span>
-      <span class="status-dot done"></span>
-    </div>
-    <div class="card-desc">雪山を滑走して障害物を避けろ！</div>
-    <div class="card-footer">
-      <span class="card-tag">snowride</span>
-      <span class="card-players">1人プレイ</span>
-    </div>
-  </div>
-</article>
-      
-      <!-- More coming soon placeholder -->
-      <article class="game-card" style="opacity:0.45;pointer-events:none" aria-hidden="true">
-        <div class="thumb" style="background:rgba(0,0,0,0.2)">
-          <div class="big-icon" style="filter:grayscale(1) opacity(0.4)">🎯</div>
-        </div>
-        <div class="card-body">
-          <div class="card-title-row">
-            <span class="card-title" style="color:var(--muted)">近日公開</span>
-            <span class="status-dot wip">
-            </span>
-          </div>
-          <div class="card-desc">新しいゲームを準備中です。お楽しみに！</div>
-          <div class="card-footer">
-            <span class="card-tag" style="color:var(--muted)">coming-soon</span>
-          </div>
-        </div>
-      </article>
-      <article class="game-card" style="opacity:0.45;pointer-events:none" aria-hidden="true">
-        <div class="thumb" style="background:rgba(0,0,0,0.2)">
-          <div class="big-icon" style="filter:grayscale(1) opacity(0.4)">🚀</div>
-        </div>
-        <div class="card-body">
-          <div class="card-title-row">
-            <span class="card-title" style="color:var(--muted)">近日公開</span>
-            <span class="status-dot wip">
-            </span>
-          </div>
-          <div class="card-desc">新しいゲームを準備中です。お楽しみに！</div>
-          <div class="card-footer">
-            <span class="card-tag" style="color:var(--muted)">coming-soon</span>
-          </div>
-        </div>
-      </article>
-    </section>
+
+    <section class="grid" id="gameGrid" aria-label="ゲーム一覧"></section>
+
     <p class="footer">クリックまたはEnterでゲームをプレイ</p>
   </div>
+
   <script>
-  // Filter tabs
-      const tabs = document.querySelectorAll('.filter-tab');
-      const cards = document.querySelectorAll('.game-card[data-genre]');
-    
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          const genre = tab.dataset.genre;
-          cards.forEach(card => {
-            if (genre === 'all' || card.dataset.genre === genre) {
-              card.style.display = '';
-            } else {
-              card.style.display = 'none';
-            }
-          });
+  // ── カードHTML生成 ──────────────────────────────────────────────────
+  function createCard(g) {
+    const card = document.createElement('article');
+    card.className = 'game-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.dataset.genre = g.genre;
+    card.dataset.href = `/game/play.html?game=${g.key}`;
+    card.setAttribute('aria-label', `${g.name} — プレイする`);
+
+    card.innerHTML = `
+      <div class="thumb">
+        ${g.isNew ? '<span class="new-badge">NEW</span>' : ''}
+        <span class="genre-badge">${g.genreLabel}</span>
+        <div class="big-icon">${g.emoji}</div>
+        <div class="play-overlay" aria-hidden="true"><div class="play-btn">▶</div></div>
+      </div>
+      <div class="card-body">
+        <div class="card-title-row">
+          <span class="card-title">${g.name}</span>
+          <span class="status-dot ${g.status}" title="${g.status === 'done' ? '実装済み' : '開発中'}" aria-label="${g.status === 'done' ? '実装済み' : '開発中'}"></span>
+        </div>
+        <div class="card-desc">${g.desc}</div>
+        <div class="card-footer">
+          <span class="card-tag">${g.key}</span>
+          <span class="card-players">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            ${g.players}
+          </span>
+        </div>
+      </div>
+    `;
+
+    function go() { window.location.href = card.dataset.href; }
+    card.addEventListener('click', go);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+
+    return card;
+  }
+
+  // coming-soonプレースホルダー
+  function createComingSoon(emoji) {
+    const card = document.createElement('article');
+    card.className = 'game-card coming-soon';
+    card.setAttribute('aria-hidden', 'true');
+    card.innerHTML = `
+      <div class="thumb" style="background:rgba(0,0,0,0.2)">
+        <div class="big-icon" style="filter:grayscale(1) opacity(0.4)">${emoji}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title-row">
+          <span class="card-title" style="color:var(--muted)">近日公開</span>
+          <span class="status-dot wip"></span>
+        </div>
+        <div class="card-desc">新しいゲームを準備中です。お楽しみに！</div>
+        <div class="card-footer">
+          <span class="card-tag" style="color:var(--muted)">coming-soon</span>
+        </div>
+      </div>
+    `;
+    return card;
+  }
+
+  // ── JSONを読み込んでグリッドを構築 ──────────────────────────────────
+  async function init() {
+    const grid = document.getElementById('gameGrid');
+
+    let games;
+    try {
+      const res = await fetch('games.json');
+      if (!res.ok) throw new Error(res.statusText);
+      games = await res.json();
+    } catch (err) {
+      grid.innerHTML = '<div class="empty">⚠️ ゲームデータの読み込みに失敗しました。</div>';
+      console.error('games.json の読み込みエラー:', err);
+      return;
+    }
+
+    games.forEach(g => grid.appendChild(createCard(g)));
+
+    // coming-soon プレースホルダー（固定2枚）
+    grid.appendChild(createComingSoon('🎯'));
+    grid.appendChild(createComingSoon('🚀'));
+
+    // ── フィルタータブ ────────────────────────────────────────────────
+    const tabs = document.querySelectorAll('.filter-tab');
+    const cards = grid.querySelectorAll('.game-card[data-genre]');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const genre = tab.dataset.genre;
+        cards.forEach(card => {
+          card.style.display = (genre === 'all' || card.dataset.genre === genre) ? '' : 'none';
         });
       });
-    
-      // Card click / keyboard nav
-      document.querySelectorAll('.game-card[data-href]').forEach(card => {
-        function go() {
-          window.location.href = card.dataset.href;
-        }
-        card.addEventListener('click', go);
-        card.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
-        });
-      });
+    });
+  }
+
+  init();
   </script>
 </body>
-
 </html>
