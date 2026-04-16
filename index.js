@@ -1232,7 +1232,7 @@ app.get("/version", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "raw/version.json"));
 });
 
-app.get("/game.json", (req, res) => {
+app.get("/games.json", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "game/game.json"));
 });
 
