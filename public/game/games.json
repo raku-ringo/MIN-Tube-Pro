@@ -152,5 +152,19 @@
     "tags": ["アーケード"],
     "isNew": false,
     "status": "done"
-  }
+  },
+  {
+  "key": "deepminer",
+  "name": "Deep Miner",
+  "emoji": "⛏️",
+  "sub": "アクション · 1人プレイ",
+  "file": "fun/deepminer.html",
+  "desc": "地下深くへ掘り進め！",
+  "genre": "action",
+  "genreLabel": "アクション",
+  "players": "1人プレイ",
+  "tags": ["アクション", "採掘", "強化"],
+  "isNew": true,
+  "status": "done"
+}
 ]
