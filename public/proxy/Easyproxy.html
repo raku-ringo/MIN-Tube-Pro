@@ -3,74 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡易Webプロキシ</title>
+    <title>Web Proxy Launcher</title>
     <style>
-        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        #toolbar { background: #333; color: white; padding: 10px; display: flex; gap: 10px; }
-        #url-input { flex-grow: 1; padding: 5px; border-radius: 4px; border: none; }
-        button { padding: 5px 15px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        body { font-family: sans-serif; margin: 0; background: #121212; color: white; display: flex; flex-direction: column; height: 100vh; }
+        #header { background: #1f1f1f; padding: 15px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        input { flex-grow: 1; padding: 12px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; }
+        select { padding: 11px; border-radius: 6px; background: #333; color: white; border: none; cursor: pointer; }
+        button { padding: 11px 25px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button:hover { background: #0056b3; }
-        #viewer-container { flex-grow: 1; border: none; width: 100%; overflow: auto; background: white; }
-        #status { font-size: 12px; color: #ccc; margin-top: 5px; }
+        #content { flex-grow: 1; background: white; border: none; }
         iframe { width: 100%; height: 100%; border: none; }
+        .hint { font-size: 11px; color: #888; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div id="toolbar">
-    <input type="text" id="url-input" placeholder="https://example.com" value="https://example.com">
-    <button onclick="loadPage()">閲覧する</button>
+<div id="header">
+    <input type="text" id="url-input" placeholder="https://www.example.com" value="">
+    <select id="engine">
+        <option value="google">Engine 1 (Google Proxy)</option>
+        <option value="croxy">Engine 2 (Video/Advanced)</option>
+    </select>
+    <button onclick="browse()">閲覧する</button>
 </div>
-<div id="status">※CORS回避プロキシを使用して取得します。一部のサイトは表示できません。</div>
 
-<div id="viewer-container">
-    <iframe id="proxy-viewer"></iframe>
-</div>
+<iframe id="proxy-viewer" name="proxy-viewer"></iframe>
 
 <script>
-    async function loadPage() {
-        const urlInput = document.getElementById('url-input').value;
+    function browse() {
+        let url = document.getElementById('url-input').value.trim();
+        const engine = document.getElementById('engine').value;
         const viewer = document.getElementById('proxy-viewer');
-        
-        if (!urlInput.startsWith('http')) {
-            alert('URLは http:// または https:// から入力してください。');
+
+        if (!url) {
+            alert('URLを入力してください');
             return;
         }
 
-        try {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlInput)}`;
+        // http/httpsの自動補完
+        if (!url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+
+        if (engine === 'google') {
+            // Google Translateをプロキシとして利用 (iframe内で動作しやすい)
+            const proxyUrl = `https://translate.google.com/translate?sl=auto&tl=ja&u=${encodeURIComponent(url)}`;
+            viewer.src = proxyUrl;
+        } 
+        else if (engine === 'croxy') {
+            // 高性能プロキシCroxyProxyへ転送
+            // セキュリティ制限によりiframe内表示ができない場合があるため、別窓または直接遷移
+            const proxyUrl = `https://www.croxyproxy.com/_jp/` + url;
+            // ページ内で試行
+            viewer.src = proxyUrl;
             
-            document.getElementById('status').innerText = '読み込み中...';
-            
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('ネットワークエラー');
-            
-            const data = await response.json();
-            
-            // iframeの中に取得したHTMLひょーじー
-            const doc = viewer.contentWindow.document;
-            doc.open();
-            
-     
-            const baseTag = `<base href="${urlInput}">`;
-            const content = data.contents.replace('<head>', `<head>${baseTag}`);
-            
-            doc.write(content);
-            doc.close();
-            
-            document.getElementById('status').innerText = `表示中: ${urlInput}`;
-        } catch (error) {
-            console.error(error);
-            alert('読み込みに失敗しました。サイトがアクセスを拒否しているか、URLが正しくありません。');
-            document.getElementById('status').innerText = 'エラーが発生しました。';
+            // iframe拒否対策として数秒後に真っ白なら案内を出す
+            setTimeout(() => {
+                if (confirm("ページが表示されない場合、直接プロキシサイトで開きますか？")) {
+                    window.open(proxyUrl, '_blank');
+                }
+            }, 5000);
         }
     }
 
-    // Enterキーいれるー
+    // Enterキーだお
     document.getElementById('url-input').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            loadPage();
-        }
+        if (e.key === 'Enter') browse();
     });
 </script>
 
