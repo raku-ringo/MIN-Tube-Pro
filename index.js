@@ -14,6 +14,13 @@ const API_HEALTH_CHECKER = "https://raw.githubusercontent.com/Minotaur-ZAOU/test
 const TEMP_API_LIST = "https://raw.githubusercontent.com/Minotaur-ZAOU/test/refs/heads/main/min-tube-api.json";
 const RAPID_API_HOST = 'ytstream-download-youtube-videos.p.rapidapi.com';
 const videoCache = new Map();
+const userAgents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
+];
 
 const keys = [
   process.env.RAPIDAPI_KEY_1 || '69e2995a79mshcb657184ba6731cp16f684jsn32054a070ba5',
@@ -1766,6 +1773,54 @@ app.get("/channel/:channelName", (req, res) => {
 </body>
 </html>`;
   res.send(html);
+});
+
+app.get('/stream/inv/:videoId', async (req, res) => {
+    const videoId = req.params.videoId;
+    const now = Date.now();
+
+    if (videoCache.has(videoId)) {
+        const cached = videoCache.get(videoId);
+        if (now < cached.expiry) {
+            return res.type('text/plain').send(cached.url);
+        }
+    }
+
+    const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+    
+    try {
+        const configRes = await fetch("https://raw.githubusercontent.com/mino-hobby-pro/min-tube-pro-local-txt/refs/heads/main/inv-check.txt");
+        const extraParams = (await configRes.text()).trim(); 
+        
+        const targetUrl = `https://yt-comp5.chocolatemoo53.com/companion/latest_version?id=${videoId}${extraParams}`;
+
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+                "User-Agent": randomUA,
+                "Accept": "*/*"
+            },
+            redirect: 'follow'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const finalUrl = response.url;
+
+
+        videoCache.set(videoId, {
+            url: finalUrl,
+            expiry: now + 60000
+        });
+
+        res.type('text/plain').send(finalUrl);
+
+    } catch (error) {
+        console.error('Error fetching the URL:', error.message);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "error.html")));
