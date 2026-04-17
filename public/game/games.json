@@ -180,5 +180,47 @@
   "tags": ["アーケード"],
   "isNew": true,
   "status": "done"
+},
+  {
+  "key": "eaglercraft",
+  "name": "Eaglercraft 1.12",
+  "emoji": "⛏️",
+  "sub": "サンドボックス · オンライン",
+  "file": "fun/1.2.1/eaglercraft1.12.html",
+  "desc": "ブラウザで遊べるMinecraft風ゲーム！建築もサバイバルも自由自在。",
+  "genre": "sandbox",
+  "genreLabel": "サンドボックス",
+  "players": "オンライン",
+  "tags": ["サンドボックス", "建築", "マルチ"],
+  "isNew": true,
+  "status": "done"
+},
+{
+  "key": "1v1lol",
+  "name": "1v1.LOL",
+  "emoji": "🔫",
+  "sub": "シューティング · 対戦",
+  "file": "fun/1.2.1/1v1.lol.html",
+  "desc": "建築×バトル！瞬時の判断とエイムで1対1を制せ。",
+  "genre": "shooter",
+  "genreLabel": "シューティング",
+  "players": "対戦",
+  "tags": ["FPS", "対戦", "建築"],
+  "isNew": true,
+  "status": "done"
+},
+{
+  "key": "10minutestilldawn",
+  "name": "10 Minutes Till Dawn",
+  "emoji": "🌙",
+  "sub": "アクション · 1人プレイ",
+  "file": "fun/1.2.1/10minutestilldawn.html",
+  "desc": "闇の中で10分間生き延びろ！スキルを組み合わせて最強ビルドを作れ。",
+  "genre": "action",
+  "genreLabel": "アクション",
+  "players": "1人プレイ",
+  "tags": ["アクション", "サバイバル", "ローグライク"],
+  "isNew": true,
+  "status": "done"
 }
 ]
