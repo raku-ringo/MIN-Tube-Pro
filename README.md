@@ -1,6 +1,4 @@
-vercel垢復活させました～～　https://min-tube-pro.vercel.app/　ご迷惑をお掛けしました---mino
-
-vercel逝ちゃいましたけどどうするんすか---ねむ
+vercel垢復活させました～～　<br>https://min-tube-pro.vercel.app/　<br>ご迷惑をお掛けしました---mino
 
 # ver1.2.1
 変更点
