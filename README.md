@@ -1,4 +1,4 @@
-ごめんvercel垢落ちちゃった 全然エラー起きてるわけじゃないです---mino
+vercel垢復活させました～～　https://min-tube-pro.vercel.app/　ご迷惑をお掛けしました---mino
 
 vercel逝ちゃいましたけどどうするんすか---ねむ
 
