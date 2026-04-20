@@ -247,10 +247,10 @@
   "genre": "action",
   "genreLabel": "アクション",
   "players": "1人",
-  "tags": ["アクション", "サバイバル", "ロールプレイ"],
+  "tags": ["アクション", "サバイバル", "猫"],
   "isNew": true,
   "status": "done"
-}
+},
   {
   "key": "dr1ve",
   "name": "Drive WILD",
@@ -262,6 +262,20 @@
   "genreLabel": "アクション",
   "players": "1人",
   "tags": ["アクション", "車", "ドライブ"],
+  "isNew": true,
+  "status": "done"
+}
+   {
+  "key": "Claw",
+  "name": "Claw strike",
+  "emoji": "🐈‍⬛",
+  "sub": "アクション · 1人プレイ",
+  "file": "fun/Cat2.html",
+  "desc": "戦え！主人の為に！",
+  "genre": "action",
+  "genreLabel": "アクション",
+  "players": "1人",
+  "tags": ["アクション", "サバイバル", "猫"],
   "isNew": true,
   "status": "done"
 }
