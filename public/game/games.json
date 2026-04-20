@@ -251,4 +251,18 @@
   "isNew": true,
   "status": "done"
 }
+  {
+  "key": "dr1ve",
+  "name": "Drive WILD",
+  "emoji": "🚗",
+  "sub": "アクション · 1人プレイ",
+  "file": "fun/Drive.html",
+  "desc": "車で敵を抜かせ‼︎",
+  "genre": "action",
+  "genreLabel": "アクション",
+  "players": "1人",
+  "tags": ["アクション", "車", "ドライブ"],
+  "isNew": true,
+  "status": "done"
+}
 ]
