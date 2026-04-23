@@ -1,4 +1,3 @@
-vercel垢復活させました～～　<br>https://min-tube-pro.vercel.app/　<br>ご迷惑をお掛けしました---mino
 # ver1.2.4
 - ゲームを6つ追加
 - ゲームを読み込んだ時A〜Zで読み込まれるように
