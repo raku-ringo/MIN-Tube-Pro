@@ -292,5 +292,19 @@
   "tags": ["ホラー", "サバイバル", "backroom"],
   "isNew": true,
   "status": "done"
+},  
+  {
+  "key": "cube",
+  "name": "Rubik's Cube",
+  "emoji": "🟥",
+  "sub": "アーケード · 1人プレイ",
+  "file": "fun/Cube.html",
+  "desc": "ルービックキューブのタイムを競え",
+  "genre": "arcade",
+  "genreLabel": "アーケード",
+  "players": "1人",
+  "tags": ["ルービック", "1人プレイ", "Rubik's Cube"],
+  "isNew": true,
+  "status": "done"
 }
 ]
