@@ -1315,6 +1315,10 @@ app.get("/game", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "app/sorry.html"));
 });
 
+app.get("/anime", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "app/anime.html"));
+});
+
 app.get("/movie", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "app/sorry.html"));
 });
