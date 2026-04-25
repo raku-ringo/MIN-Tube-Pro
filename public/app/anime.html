@@ -946,7 +946,7 @@
       const frame = document.getElementById('playerFrame');
       const titleEl = document.getElementById('playerTitle');
 
-      titleEl.textContent = title;
+      titleEl.textContent = title != null ? String(title) : '無題';
       frame.src = `/pro-stream/${videoId}`;
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
@@ -979,13 +979,13 @@
     }
 
     function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      if (str == null) return '';
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
     function formatViews(num) {
-      if (!num) return '';
-      const n = typeof num === 'string' ? parseInt(num.replace(/[^0-9]/g,'')) : num;
+      if (num == null) return '';
+      const n = typeof num === 'string' ? parseInt(num.replace(/[^0-9]/g,'')) : Number(num);
       if (isNaN(n)) return String(num);
       if (n >= 100000000) return (n/100000000).toFixed(1) + '億回視聴';
       if (n >= 10000) return (n/10000).toFixed(1) + '万回視聴';
